@@ -56,7 +56,10 @@ class _LiveSettingsPanelState extends State<LiveSettingsPanel> {
               Row(
                 children: [
                   Expanded(
-                    child: Text(_section.title, style: Theme.of(context).textTheme.titleLarge),
+                    child: Text(
+                      _section.title,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                   ),
                   IconButton(
                     tooltip: '关闭设置',
@@ -84,7 +87,7 @@ class _LiveSettingsPanelState extends State<LiveSettingsPanel> {
                 const Text('这些选项控制直播间内的消息，不是手机或桌面推送。'),
               ],
               if (_section == LiveSettingsSection.danmaku) ...[
-                if (widget.danmakuVisibility case final visibility?) visibility,
+                ?widget.danmakuVisibility,
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('字体、透明度与显示区域'),
@@ -94,24 +97,34 @@ class _LiveSettingsPanelState extends State<LiveSettingsPanel> {
                 ),
               ],
               const Divider(),
-              Obx(() => Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final option in LiveRoomOption.values)
-                    if (option.section == _section)
-                      SwitchListTile(
-                        key: ValueKey(option.name),
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(option.label),
-                        subtitle: _description(option) == null ? null : Text(_description(option)!),
-                        value: widget.settings.enabled(option),
-                        onChanged: (value) => widget.settings.set(option, value),
+              Obx(
+                () => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final option in LiveRoomOption.values)
+                      if (option.section == _section)
+                        SwitchListTile(
+                          key: ValueKey(option.name),
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(option.label),
+                          subtitle: _description(option) == null
+                              ? null
+                              : Text(_description(option)!),
+                          value: widget.settings.enabled(option),
+                          onChanged: (value) =>
+                              widget.settings.set(option, value),
+                        ),
+                    if (widget.settings.saveError.value case final error?)
+                      Text(
+                        error,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
                       ),
-                  if (widget.settings.saveError.value case final error?)
-                    Text(error, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                ],
-              )),
+                  ],
+                ),
+              ),
               if (_section == LiveSettingsSection.danmaku)
                 TextButton.icon(
                   onPressed: widget.onBlockRules,

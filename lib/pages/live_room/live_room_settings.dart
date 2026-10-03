@@ -59,7 +59,9 @@ class LiveRoomSettings {
 
   void load() {
     if (_loaded) return;
-    final defaults = {for (final option in LiveRoomOption.values) option.name: true};
+    final defaults = {
+      for (final option in LiveRoomOption.values) option.name: true,
+    };
     final stored = _read(storageKey);
     if (stored is Map) {
       for (final option in LiveRoomOption.values) {
@@ -77,9 +79,17 @@ class LiveRoomSettings {
             }
           }
         }
-        hide('gifts', [LiveRoomOption.giftMessages, LiveRoomOption.giftBroadcasts, LiveRoomOption.giftEffects]);
+
+        hide('gifts', [
+          LiveRoomOption.giftMessages,
+          LiveRoomOption.giftBroadcasts,
+          LiveRoomOption.giftEffects,
+        ]);
         hide('giftEffects', [LiveRoomOption.giftEffects]);
-        hide('lottery', [LiveRoomOption.lotteryDanmaku, LiveRoomOption.lotteryNotices]);
+        hide('lottery', [
+          LiveRoomOption.lotteryDanmaku,
+          LiveRoomOption.lotteryNotices,
+        ]);
         hide('entry', [LiveRoomOption.entryNotices]);
         hide('superChat', [LiveRoomOption.superChats]);
         hide('cornerEmotes', [LiveRoomOption.cornerEmotes]);
@@ -92,7 +102,8 @@ class LiveRoomSettings {
     revision.value++;
   }
 
-  Future<bool> set(LiveRoomOption option, bool value) => _persist({option.name: value});
+  Future<bool> set(LiveRoomOption option, bool value) =>
+      _persist({option.name: value});
 
   Future<bool> reset(LiveSettingsSection section) => _persist({
     for (final option in LiveRoomOption.values)

@@ -55,7 +55,9 @@ class LiveRoomChatPanel extends StatelessWidget {
         Obx(
           () {
             liveRoomController.settings.revision.value;
-            final showBadges = liveRoomController.settings.enabled(LiveRoomOption.badges);
+            final showBadges = liveRoomController.settings.enabled(
+              LiveRoomOption.badges,
+            );
             return LiveListView.separated(
               key: const PageStorageKey(LiveRoomChatPanel),
               // multiply by 2 to account for separators

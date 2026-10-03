@@ -53,8 +53,6 @@ import 'package:PiliPlus/utils/mobile_observer.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/share_utils.dart';
-import 'package:PiliPlus/utils/storage.dart';
-import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:PiliPlus/utils/theme_utils.dart';
 import 'package:PiliPlus/utils/utils.dart';
@@ -76,7 +74,11 @@ class LiveRoomPage extends StatefulWidget {
 }
 
 class _LiveRoomPageState extends State<LiveRoomPage>
-    with HeaderMixin<LiveRoomPage>, WidgetsBindingObserver, RouteAware, RouteAwareMixin {
+    with
+        HeaderMixin<LiveRoomPage>,
+        WidgetsBindingObserver,
+        RouteAware,
+        RouteAwareMixin {
   late final fullScreenSCWidth = Pref.fullScreenSCWidth;
   final String heroTag = Utils.generateRandomString(6);
   late final LiveRoomController _liveRoomController;
@@ -791,9 +793,12 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                   child: Row(
                     children: [
                       Icon(switch (section) {
-                        LiveSettingsSection.danmaku => Icons.chat_bubble_outline,
-                        LiveSettingsSection.gifts => Icons.card_giftcard_outlined,
-                        LiveSettingsSection.notifications => Icons.notifications_outlined,
+                        LiveSettingsSection.danmaku =>
+                          Icons.chat_bubble_outline,
+                        LiveSettingsSection.gifts =>
+                          Icons.card_giftcard_outlined,
+                        LiveSettingsSection.notifications =>
+                          Icons.notifications_outlined,
                       }, size: 19),
                       const SizedBox(width: 10),
                       Flexible(child: Text(section.title)),
@@ -977,7 +982,9 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                       height: 34,
                       child: IconButton(
                         style: IconButton.styleFrom(padding: .zero),
-                        onPressed: () => _liveRoomController.setDanmakuVisible(!enableShowLiveDanmaku),
+                        onPressed: () => _liveRoomController.setDanmakuVisible(
+                          !enableShowLiveDanmaku,
+                        ),
                         icon: enableShowLiveDanmaku
                             ? const Icon(
                                 size: 22,

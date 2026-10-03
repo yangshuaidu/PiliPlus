@@ -67,14 +67,16 @@ class LiveGiftEffects {
         _advancing ||
         current.value != null ||
         _queue.isEmpty ||
-        !enabled.value)
+        !enabled.value) {
       return;
+    }
     _advancing = true;
     final generation = _generation;
     final gift = _queue.removeAt(0);
     try {
-      if (gift.animationUrl.isEmpty && _assets == null)
+      if (gift.animationUrl.isEmpty && _assets == null) {
         await (_loading ??= _loadAssets());
+      }
       if (_disposed || generation != _generation || !enabled.value) return;
       current.value = LiveGiftEffect(
         gift,
@@ -88,7 +90,10 @@ class LiveGiftEffects {
       });
     } finally {
       _advancing = false;
-      if (!_disposed && current.value == null && _queue.isNotEmpty && enabled.value) {
+      if (!_disposed &&
+          current.value == null &&
+          _queue.isNotEmpty &&
+          enabled.value) {
         _next();
       }
     }

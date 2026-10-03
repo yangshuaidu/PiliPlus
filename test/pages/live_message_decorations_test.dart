@@ -32,20 +32,37 @@ List<int> bytes(int field, List<int> body) => [
 List<int> string(int field, String text) => bytes(field, utf8.encode(text));
 
 void main() {
-  test('re-enabled effects do not stall behind an invalidated material lookup', () async {
-    final gate = Completer<Map<String, dynamic>>();
-    final effects = LiveGiftEffects(loadCatalog: () => gate.future);
-    const oldGift = LiveGiftMessage(uid: 1, name: '旧消息', giftName: '礼物', giftId: 10, quantity: 1, action: '赠送');
-    const newGift = LiveGiftMessage(uid: 2, name: '新消息', giftName: '礼物', giftId: 10, quantity: 1, action: '赠送');
-    effects.add(oldGift);
-    effects.setEnabled(false);
-    effects.setEnabled(true);
-    effects.add(newGift);
-    gate.complete({});
-    await Future<void>.delayed(Duration.zero);
-    expect(effects.current.value!.message.uid, 2);
-    effects.dispose();
-  });
+  test(
+    're-enabled effects do not stall behind an invalidated material lookup',
+    () async {
+      final gate = Completer<Map<String, dynamic>>();
+      final effects = LiveGiftEffects(loadCatalog: () => gate.future);
+      const oldGift = LiveGiftMessage(
+        uid: 1,
+        name: '旧消息',
+        giftName: '礼物',
+        giftId: 10,
+        quantity: 1,
+        action: '赠送',
+      );
+      const newGift = LiveGiftMessage(
+        uid: 2,
+        name: '新消息',
+        giftName: '礼物',
+        giftId: 10,
+        quantity: 1,
+        action: '赠送',
+      );
+      effects.add(oldGift);
+      effects.setEnabled(false);
+      effects.setEnabled(true);
+      effects.add(newGift);
+      gate.complete({});
+      await Future<void>.delayed(Duration.zero);
+      expect(effects.current.value!.message.uid, 2);
+      effects.dispose();
+    },
+  );
   test('official lottery scene and binary emote survive protocol decoding', () {
     final emote = [
       ...string(1, 'official_1'),

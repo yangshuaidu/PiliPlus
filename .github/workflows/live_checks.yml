@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -23,11 +25,14 @@ jobs:
       - name: Format live settings changes
         shell: pwsh
         run: |
-          $paths = @('lib/pages/live_room', 'lib/models_new/live/live_danmaku/live_room_notice.dart', 'lib/pages/video/widgets/header_mixin.dart', 'test/pages/live_settings_test.dart', 'test/pages/live_message_decorations_test.dart')
-          dart format @paths
-          $formatExit = $LASTEXITCODE
-          git diff --output=live-format.patch -- @paths
-          if ($formatExit -ne 0) { exit $formatExit }
+          $paths = @(git diff-tree --no-commit-id --name-only -r HEAD -- '*.dart' | Where-Object { Test-Path -LiteralPath $_ })
+          New-Item -ItemType File -Path live-format.patch | Out-Null
+          if ($paths.Count -gt 0) {
+            dart format @paths
+            $formatExit = $LASTEXITCODE
+            git diff --output=live-format.patch -- @paths
+            if ($formatExit -ne 0) { exit $formatExit }
+          }
       - name: Analyze and test
         shell: pwsh
         run: tool/check_live.ps1

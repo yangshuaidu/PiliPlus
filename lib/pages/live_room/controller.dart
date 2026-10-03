@@ -193,7 +193,8 @@ class LiveRoomController extends GetxController {
     }
     return settings.allows(
       message,
-      activityDanmaku: message is DanmakuMsg &&
+      activityDanmaku:
+          message is DanmakuMsg &&
           roomFeatures.activities.any(
             (a) => a.danmaku.isNotEmpty && a.danmaku == message.text,
           ),
@@ -607,9 +608,13 @@ class LiveRoomController extends GetxController {
     if (!_messageMatches(generation, room, account)) return;
     if (res.dataOrNull?.list case final list? when list.isNotEmpty) {
       if (settings.enabled(LiveRoomOption.superChats)) {
-        superChatMsg.addAll(list.where((item) =>
-            !superChatMsg.any((old) => old.id == item.id) &&
-            messageVisible(item)));
+        superChatMsg.addAll(
+          list.where(
+            (item) =>
+                !superChatMsg.any((old) => old.id == item.id) &&
+                messageVisible(item),
+          ),
+        );
       }
     }
   }

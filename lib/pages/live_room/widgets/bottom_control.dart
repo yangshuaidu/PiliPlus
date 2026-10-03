@@ -97,7 +97,10 @@ class _BottomControlState extends State<BottomControl> with HeaderMixin {
                               ?.parentAreaId,
                         ),
                       ),
-                    for (final section in [LiveSettingsSection.gifts, LiveSettingsSection.notifications])
+                    for (final section in [
+                      LiveSettingsSection.gifts,
+                      LiveSettingsSection.notifications,
+                    ])
                       ComBtn(
                         height: 30,
                         tooltip: section.title,
@@ -134,7 +137,9 @@ class _BottomControlState extends State<BottomControl> with HeaderMixin {
                                   CustomIcons.dm_off,
                                   color: Colors.white,
                                 ),
-                          onTap: () => liveRoomCtr.setDanmakuVisible(!enableShowLiveDanmaku),
+                          onTap: () => liveRoomCtr.setDanmakuVisible(
+                            !enableShowLiveDanmaku,
+                          ),
                         );
                       },
                     ),

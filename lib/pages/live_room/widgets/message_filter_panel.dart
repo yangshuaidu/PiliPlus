@@ -17,15 +17,17 @@ Future<void> showLiveSettings(
     builder: (dialogContext) => LiveSettingsPanel(
       settings: controller.settings,
       initialSection: section,
-      danmakuVisibility: Obx(() => SwitchListTile(
-        contentPadding: EdgeInsets.zero,
-        title: const Text('显示画面弹幕'),
-        subtitle: controller.plPlayerController.tempPlayerConf
-            ? const Text('已启用临时播放器配置，本开关仅本次有效')
-            : null,
-        value: controller.plPlayerController.enableShowLiveDanmaku.value,
-        onChanged: controller.setDanmakuVisible,
-      )),
+      danmakuVisibility: Obx(
+        () => SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('显示画面弹幕'),
+          subtitle: controller.plPlayerController.tempPlayerConf
+              ? const Text('已启用临时播放器配置，本开关仅本次有效')
+              : null,
+          value: controller.plPlayerController.enableShowLiveDanmaku.value,
+          onChanged: controller.setDanmakuVisible,
+        ),
+      ),
       onDisplaySettings: () => Navigator.of(dialogContext).pop('display'),
       onBlockRules: () {
         if (!Accounts.main.isLogin) {
