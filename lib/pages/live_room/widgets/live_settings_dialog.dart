@@ -6,6 +6,7 @@ import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// Connects the shared settings panel to the active room and player controls.
 Future<void> showLiveSettings(
   BuildContext context,
   LiveRoomController controller, {
@@ -17,6 +18,7 @@ Future<void> showLiveSettings(
     builder: (dialogContext) => LiveSettingsPanel(
       settings: controller.settings,
       initialSection: section,
+      superChatAvailable: controller.showSuperChat,
       danmakuVisibility: Obx(
         () => SwitchListTile(
           contentPadding: EdgeInsets.zero,

@@ -8,6 +8,7 @@ class LiveSettingsPanel extends StatefulWidget {
     required this.settings,
     this.initialSection = LiveSettingsSection.danmaku,
     this.danmakuVisibility,
+    this.superChatAvailable = true,
     required this.onDisplaySettings,
     required this.onBlockRules,
   });
@@ -15,6 +16,7 @@ class LiveSettingsPanel extends StatefulWidget {
   final LiveRoomSettings settings;
   final LiveSettingsSection initialSection;
   final Widget? danmakuVisibility;
+  final bool superChatAvailable;
   final VoidCallback onDisplaySettings, onBlockRules;
 
   @override
@@ -32,7 +34,9 @@ class _LiveSettingsPanelState extends State<LiveSettingsPanel> {
 
   String? _description(LiveRoomOption option) => switch (option) {
     LiveRoomOption.cornerEmotes => '需同时开启表情弹幕',
-    LiveRoomOption.superChats => '控制已接收留言的展示，不影响订单与购买记录',
+    LiveRoomOption.superChats => widget.superChatAvailable
+        ? '控制已接收留言的展示，不影响订单与购买记录'
+        : '播放器设置已将醒目留言设为“不显示”，更改后重新进入直播间生效',
     LiveRoomOption.giftMessages => '聊天区中的赠礼记录，与特效开关独立',
     LiveRoomOption.giftBroadcasts => '直播广播和开通大航海的提示',
     LiveRoomOption.giftEffects => 'GIF / WebP 动画；当前版本没有礼物音效',
@@ -111,9 +115,14 @@ class _LiveSettingsPanelState extends State<LiveSettingsPanel> {
                           subtitle: _description(option) == null
                               ? null
                               : Text(_description(option)!),
-                          value: widget.settings.enabled(option),
-                          onChanged: (value) =>
-                              widget.settings.set(option, value),
+                          value: option == LiveRoomOption.superChats &&
+                                  !widget.superChatAvailable
+                              ? false
+                              : widget.settings.enabled(option),
+                          onChanged: option == LiveRoomOption.superChats &&
+                                  !widget.superChatAvailable
+                              ? null
+                              : (value) => widget.settings.set(option, value),
                         ),
                     if (widget.settings.saveError.value case final error?)
                       Text(
@@ -132,10 +141,20 @@ class _LiveSettingsPanelState extends State<LiveSettingsPanel> {
                   label: const Text('管理屏蔽词与用户'),
                 ),
               const SizedBox(height: 8),
-              TextButton.icon(
-                onPressed: () => widget.settings.reset(_section),
-                icon: const Icon(Icons.restore),
-                label: const Text('恢复本页分类默认值'),
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 8,
+                children: [
+                  TextButton.icon(
+                    onPressed: () => widget.settings.reset(_section),
+                    icon: const Icon(Icons.restore),
+                    label: const Text('恢复本页分类默认值'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('完成'),
+                  ),
+                ],
               ),
             ],
           ),

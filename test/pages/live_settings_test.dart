@@ -48,6 +48,7 @@ Widget app(
   LiveSettingsSection section = LiveSettingsSection.danmaku,
   TargetPlatform platform = TargetPlatform.android,
   double textScale = 1,
+  bool superChatAvailable = true,
   VoidCallback? display,
 }) => MaterialApp(
   theme: ThemeData(platform: platform),
@@ -64,6 +65,7 @@ Widget app(
           builder: (_) => LiveSettingsPanel(
             settings: settings,
             initialSection: section,
+            superChatAvailable: superChatAvailable,
             onDisplaySettings: display ?? () {},
             onBlockRules: () {},
           ),
@@ -75,30 +77,51 @@ Widget app(
 );
 
 void main() {
-  test('preferences survive closing and reopening the actual Hive settings file', () async {
-    final directory = await Directory.systemTemp.createTemp('piliplus-live-settings-');
-    var box = await Hive.openBox<dynamic>('live-settings', path: directory.path);
-    addTearDown(() async {
-      if (box.isOpen) await box.close();
-      await directory.delete(recursive: true);
-    });
-    await box.put('liveMessageFiltersV1', ['gifts']);
-    final settings = LiveRoomSettings(
-      read: (key) => box.get(key),
-      write: (key, value) => box.put(key, value),
-    )..load();
-    await settings.set(LiveRoomOption.badges, false);
-    await settings.set(LiveRoomOption.entryNotices, false);
-    await settings.set(LiveRoomOption.giftEffects, true);
-    await box.close();
-    box = await Hive.openBox<dynamic>('live-settings', path: directory.path);
-    final restarted = LiveRoomSettings(read: (key) => box.get(key))..load();
-    expect(restarted.enabled(LiveRoomOption.badges), isFalse);
-    expect(restarted.enabled(LiveRoomOption.entryNotices), isFalse);
-    expect(restarted.enabled(LiveRoomOption.giftMessages), isFalse);
-    expect(restarted.enabled(LiveRoomOption.giftBroadcasts), isFalse);
-    expect(restarted.enabled(LiveRoomOption.giftEffects), isTrue);
+  testWidgets('global SC disable is explicit and cannot be overridden by a display toggle', (tester) async {
+    final settings = SettingsStore().open();
+    await tester.pumpWidget(app(settings, superChatAvailable: false));
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+    final target = find.byKey(const ValueKey('superChats'));
+    await tester.ensureVisible(target);
+    expect(tester.widget<SwitchListTile>(target).value, isFalse);
+    expect(tester.widget<SwitchListTile>(target).onChanged, isNull);
+    expect(find.textContaining('播放器设置已将醒目留言'), findsOneWidget);
+    expect(settings.enabled(LiveRoomOption.superChats), isTrue);
+    expect(tester.takeException(), isNull);
   });
+  test(
+    'preferences survive closing and reopening the actual Hive settings file',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'piliplus-live-settings-',
+      );
+      var box = await Hive.openBox<dynamic>(
+        'live-settings',
+        path: directory.path,
+      );
+      addTearDown(() async {
+        if (box.isOpen) await box.close();
+        await directory.delete(recursive: true);
+      });
+      await box.put('liveMessageFiltersV1', ['gifts']);
+      final settings = LiveRoomSettings(
+        read: (key) => box.get(key),
+        write: (key, value) => box.put(key, value),
+      )..load();
+      await settings.set(LiveRoomOption.badges, false);
+      await settings.set(LiveRoomOption.entryNotices, false);
+      await settings.set(LiveRoomOption.giftEffects, true);
+      await box.close();
+      box = await Hive.openBox<dynamic>('live-settings', path: directory.path);
+      final restarted = LiveRoomSettings(read: (key) => box.get(key))..load();
+      expect(restarted.enabled(LiveRoomOption.badges), isFalse);
+      expect(restarted.enabled(LiveRoomOption.entryNotices), isFalse);
+      expect(restarted.enabled(LiveRoomOption.giftMessages), isFalse);
+      expect(restarted.enabled(LiveRoomOption.giftBroadcasts), isFalse);
+      expect(restarted.enabled(LiveRoomOption.giftEffects), isTrue);
+    },
+  );
   test(
     'legacy blocks migrate once without restoring previously hidden gifts',
     () async {

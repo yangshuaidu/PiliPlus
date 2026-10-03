@@ -1,4 +1,4 @@
-import 'package:PiliPlus/pages/live_room/widgets/message_filter_panel.dart';
+import 'package:PiliPlus/pages/live_room/widgets/live_settings_dialog.dart';
 import 'package:PiliPlus/pages/live_room/live_room_settings.dart';
 import 'package:PiliPlus/pages/video/widgets/header_mixin.dart';
 
