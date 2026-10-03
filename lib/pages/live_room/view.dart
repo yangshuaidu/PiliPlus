@@ -26,6 +26,7 @@ import 'package:PiliPlus/pages/live_room/superchat/superchat_card.dart';
 import 'package:PiliPlus/pages/live_room/superchat/superchat_panel.dart';
 import 'package:PiliPlus/pages/live_room/widgets/bottom_control.dart';
 import 'package:PiliPlus/pages/live_room/widgets/chat_panel.dart';
+import 'package:PiliPlus/pages/live_room/widgets/gift_sheet.dart';
 import 'package:PiliPlus/pages/live_room/widgets/header_control.dart';
 import 'package:PiliPlus/pages/video/widgets/player_focus.dart';
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
@@ -823,6 +824,35 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                 ),
                 const Expanded(
                   child: Text('发送弹幕', style: TextStyle(color: baseWhite)),
+                ),
+                IconButton(
+                  tooltip: '礼物',
+                  style: IconButton.styleFrom(padding: EdgeInsets.zero),
+                  onPressed: () => showLiveGiftPanel(
+                    context,
+                    roomId: _liveRoomController.roomId,
+                    anchorUid: _liveRoomController.ruid,
+                    anchorName:
+                        _liveRoomController
+                            .roomInfoH5
+                            .value
+                            ?.anchorInfo
+                            ?.baseInfo
+                            ?.uname ??
+                        '当前主播',
+                    areaId:
+                        _liveRoomController.roomInfoH5.value?.roomInfo?.areaId,
+                    parentAreaId: _liveRoomController
+                        .roomInfoH5
+                        .value
+                        ?.roomInfo
+                        ?.parentAreaId,
+                  ),
+                  icon: const Icon(
+                    Icons.card_giftcard,
+                    size: 22,
+                    color: baseWhite,
+                  ),
                 ),
                 Builder(
                   builder: (context) {

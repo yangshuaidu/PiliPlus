@@ -1,5 +1,6 @@
 import 'package:PiliPlus/common/widgets/custom_icon.dart';
 import 'package:PiliPlus/pages/live_room/controller.dart';
+import 'package:PiliPlus/pages/live_room/widgets/gift_sheet.dart';
 import 'package:PiliPlus/pages/video/widgets/header_mixin.dart';
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/video_fit_type.dart';
@@ -62,6 +63,27 @@ class _BottomControlState extends State<BottomControl> with HeaderMixin {
               onTap: widget.onRefresh,
             ),
             const Spacer(),
+            if (isFullScreen)
+              ComBtn(
+                height: 30,
+                tooltip: '礼物',
+                icon: const Icon(
+                  Icons.card_giftcard,
+                  size: 18,
+                  color: Colors.white,
+                ),
+                onTap: () => showLiveGiftPanel(
+                  context,
+                  roomId: liveRoomCtr.roomId,
+                  anchorUid: liveRoomCtr.ruid,
+                  anchorName:
+                      liveRoomCtr.roomInfoH5.value?.anchorInfo?.baseInfo?.uname ??
+                      '当前主播',
+                  areaId: liveRoomCtr.roomInfoH5.value?.roomInfo?.areaId,
+                  parentAreaId:
+                      liveRoomCtr.roomInfoH5.value?.roomInfo?.parentAreaId,
+                ),
+              ),
             ComBtn(
               height: 30,
               tooltip: '屏蔽',
