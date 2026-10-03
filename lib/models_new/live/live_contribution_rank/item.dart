@@ -6,6 +6,7 @@ class LiveContributionRankItem {
   String? name;
   String? face;
   int? score;
+  int? rank;
   UinfoMedal? uinfoMedal;
   bool anonymous;
 
@@ -14,6 +15,7 @@ class LiveContributionRankItem {
     this.name,
     this.face,
     this.score,
+    this.rank,
     this.uinfoMedal,
     this.anonymous = false,
   });
@@ -36,6 +38,7 @@ class LiveContributionRankItem {
       name: anonymous ? '匿名观众' : (json['name'] ?? base['name'])?.toString(),
       face: anonymous ? null : (json['face'] ?? base['face'])?.toString(),
       score: liveInt(json['score']),
+      rank: liveInt(json['rank']),
       anonymous: anonymous,
       uinfoMedal: medal,
     );

@@ -13,9 +13,12 @@ class LiveGuardRankPanel extends StatefulWidget {
     required this.roomId,
     required this.ruid,
     this.embedded = false,
+    this.loadRank,
   });
   final int roomId, ruid;
   final bool embedded;
+  final Future<LoadingState<Map<String, dynamic>>> Function(int type, int page)?
+      loadRank;
   @override
   State<LiveGuardRankPanel> createState() => _LiveGuardRankPanelState();
 }
@@ -41,27 +44,34 @@ class _LiveGuardRankPanelState extends State<LiveGuardRankPanel> {
       _busy = true;
       _error = null;
       if (reset) {
+        _page = 0;
+        _pages = 1;
         _items.clear();
         _own = _previous = null;
         _count = null;
       }
     });
     try {
-      final result = await LiveHttp.liveGuardRank(
-        roomId: widget.roomId,
-        ruid: widget.ruid,
-        page: page,
-        type: _type,
-      );
+      final result = await (widget.loadRank?.call(_type, page) ??
+          LiveHttp.liveGuardRank(
+            roomId: widget.roomId,
+            ruid: widget.ruid,
+            page: page,
+            type: _type,
+          ));
       if (!mounted || generation != _generation) return;
       if (result case Success(:final response)) {
         final info = liveMap(response['info']);
         setState(() {
           _page = page;
-          _pages = liveInt(info['page']) ?? page;
-          _count = liveInt(info['num']);
-          _own = liveMap(response['my_follow_info']);
-          _previous = liveMaps(response['extop']).firstOrNull;
+          _pages = liveInt(info['page']) ?? _pages;
+          _count = liveInt(info['num']) ?? _count;
+          if (page == 1 || response.containsKey('my_follow_info')) {
+            _own = liveMap(response['my_follow_info']);
+          }
+          if (page == 1 || response.containsKey('extop')) {
+            _previous = liveMaps(response['extop']).firstOrNull;
+          }
           final incoming = [
             if (page == 1) ...liveMaps(response['top3']),
             ...liveMaps(response['list']),
@@ -94,7 +104,9 @@ class _LiveGuardRankPanelState extends State<LiveGuardRankPanel> {
   Widget _row(Map<String, dynamic> data, {String? prefix}) {
     final user = LiveContributionRankItem.fromJson(data);
     final level = liveInt(liveMap(liveMap(data['uinfo'])['guard'])['level']);
-    final guard = const {1: '总督', 2: '提督', 3: '舰长'}[level];
+    final guard = user.anonymous
+        ? null
+        : const {1: '总督', 2: '提督', 3: '舰长'}[level];
     final rank = liveInt(data['rank']);
     return ListTile(
       leading: NetworkImgLayer(
@@ -103,7 +115,11 @@ class _LiveGuardRankPanelState extends State<LiveGuardRankPanel> {
         height: 42,
         type: .avatar,
       ),
-      title: Text('${prefix == null ? '' : '$prefix · '}${user.name ?? '观众'}'),
+      title: Text(
+        '${prefix == null ? '' : '$prefix · '}${user.name ?? '观众'}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
       subtitle: Text(
         [
           ?guard,
@@ -121,80 +137,101 @@ class _LiveGuardRankPanelState extends State<LiveGuardRankPanel> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 4, 0),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                '大航海${_count == null ? '' : ' · $_count'}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final compact =
+          constraints.maxHeight < 360 ||
+          MediaQuery.textScalerOf(context).scale(14) > 21;
+      final header = <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 4, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '大航海${_count == null ? '' : ' · $_count'}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            IconButton(
-              onPressed: _busy ? null : () => _load(reset: true),
-              icon: const Icon(Icons.refresh),
-            ),
-            if (!widget.embedded)
               IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close),
+                tooltip: '刷新榜单',
+                onPressed: _busy ? null : () => _load(reset: true),
+                icon: const Icon(Icons.refresh),
               ),
-          ],
-        ),
-      ),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          for (final tab in _tabs.entries)
-            ChoiceChip(
-              label: Text(tab.value),
-              selected: _type == tab.key,
-              onSelected: (_) {
-                setState(() => _type = tab.key);
-                _load(reset: true);
-              },
-            ),
-        ],
-      ),
-      if (_busy) const LinearProgressIndicator(),
-      Expanded(
-        child: ListView(
-          children: [
-            if (_error != null)
-              Padding(padding: const EdgeInsets.all(16), child: Text(_error!)),
-            if (_previous != null && _type != 5)
-              _row(_previous!, prefix: _type == 4 ? '上周 TOP1' : '上月 TOP1'),
-            for (final item in _items) _row(item),
-            if (!_busy && _error == null && _items.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Text('暂无人上榜', textAlign: TextAlign.center),
-              ),
-            if (_page < _pages)
-              TextButton(
-                onPressed: _busy ? null : _load,
-                child: const Text('加载更多'),
-              ),
-          ],
-        ),
-      ),
-      if (_own?.isNotEmpty == true) _row(_own!, prefix: '我'),
-      Padding(
-        padding: const EdgeInsets.all(12),
-        child: FilledButton.icon(
-          onPressed: () => PageUtils.launchURL(
-            'https://live.bilibili.com/p/html/live-app-guard-info/index.html?uid=${widget.ruid}&is_live_webview=1',
+              if (!widget.embedded)
+                IconButton(
+                  tooltip: '关闭',
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+            ],
           ),
-          icon: const Icon(Icons.sailing),
-          label: const Text('在官方页面上舰'),
         ),
-      ),
-    ],
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 12,
+          children: [
+            for (final tab in _tabs.entries)
+              ChoiceChip(
+                label: Text(tab.value),
+                selected: _type == tab.key,
+                onSelected: (_) {
+                  setState(() => _type = tab.key);
+                  _load(reset: true);
+                },
+              ),
+          ],
+        ),
+        if (_busy) const LinearProgressIndicator(),
+      ];
+      final footer = <Widget>[
+        if (_own?.isNotEmpty == true) _row(_own!, prefix: '我'),
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: FilledButton.icon(
+            onPressed: () => PageUtils.launchURL(
+              'https://live.bilibili.com/p/html/live-app-guard-info/index.html?uid=${widget.ruid}&is_live_webview=1',
+            ),
+            icon: const Icon(Icons.sailing),
+            label: const Text('在官方页面上舰'),
+          ),
+        ),
+      ];
+      return Column(
+        children: [
+          if (!compact) ...header,
+          Expanded(
+            child: ListView(
+              children: [
+                if (compact) ...header,
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(_error!),
+                  ),
+                if (_previous != null && _type != 5)
+                  _row(_previous!, prefix: _type == 4 ? '上周 TOP1' : '上月 TOP1'),
+                for (final item in _items) _row(item),
+                if (!_busy && _error == null && _items.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text('暂无人上榜', textAlign: TextAlign.center),
+                  ),
+                if (_error == null && _page < _pages)
+                  TextButton(
+                    onPressed: _busy ? null : _load,
+                    child: const Text('加载更多'),
+                  ),
+                if (compact) ...footer,
+              ],
+            ),
+          ),
+          if (!compact) ...footer,
+        ],
+      );
+    },
   );
 }

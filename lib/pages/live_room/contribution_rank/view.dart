@@ -159,16 +159,7 @@ class _ContributionRankTypeState extends State<_ContributionRankType>
           Obx(() {
             final own = _controller.own.value;
             if (own == null) return const SizedBox.shrink();
-            return ListTile(
-              leading: NetworkImgLayer(
-                src: own.face,
-                width: 32,
-                height: 32,
-                type: .avatar,
-              ),
-              title: Text('我 · ${own.name ?? '观众'}'),
-              trailing: Text('贡献 ${own.score ?? '—'}'),
-            );
+            return LiveOwnRankTile(item: own, online: showScore);
           }),
         ],
       ),
@@ -183,7 +174,7 @@ class _ContributionRankTypeState extends State<_ContributionRankType>
       Loading() => linearLoading,
       Success(:final response) =>
         response != null && response.isNotEmpty
-            ? SliverFixedExtentList.builder(
+            ? SliverList.builder(
                 itemCount: response.length,
                 itemBuilder: (context, index) {
                   final item = response[index];
@@ -193,7 +184,6 @@ class _ContributionRankTypeState extends State<_ContributionRankType>
                     showScore: showScore,
                   );
                 },
-                itemExtent: 60,
               )
             : HttpError(onReload: _controller.onReload),
       Error(:final errMsg) => HttpError(
@@ -205,6 +195,37 @@ class _ContributionRankTypeState extends State<_ContributionRankType>
 
   @override
   bool get wantKeepAlive => true;
+}
+
+class LiveOwnRankTile extends StatelessWidget {
+  const LiveOwnRankTile({super.key, required this.item, required this.online});
+
+  final LiveContributionRankItem item;
+  final bool online;
+
+  @override
+  Widget build(BuildContext context) {
+    final rank = item.rank;
+    final label = rank == null
+        ? '—'
+        : rank < 0
+        ? (online ? '100+' : '未上榜')
+        : '#$rank';
+    return ListTile(
+      leading: NetworkImgLayer(
+        src: item.face,
+        width: 32,
+        height: 32,
+        type: .avatar,
+      ),
+      title: Text(
+        '我 · ${item.name ?? '观众'}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text('名次 $label · 贡献 ${item.score ?? '—'}'),
+    );
+  }
 }
 
 class _Item extends StatelessWidget {
@@ -221,7 +242,11 @@ class _Item extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     late final colorScheme = ColorScheme.of(context);
-    Widget child = Text(item.name ?? '观众');
+    Widget child = Text(
+      item.name ?? '观众',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
     if (item.uinfoMedal case final uinfoMedal?) {
       try {
         child = Column(
@@ -254,7 +279,7 @@ class _Item extends StatelessWidget {
               width: 32,
               child: Center(
                 child: Text(
-                  '${index + 1}',
+                  '${item.rank != null && item.rank! > 0 ? item.rank : index + 1}',
                   textAlign: .center,
                   textScaler: .noScaling,
                   style: TextStyle(
@@ -275,7 +300,7 @@ class _Item extends StatelessWidget {
             Expanded(child: child),
             if (showScore)
               Text(
-                item.score.toString(),
+                '${item.score ?? '—'}',
                 style: TextStyle(color: colorScheme.outline),
               ),
           ],

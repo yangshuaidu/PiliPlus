@@ -62,6 +62,7 @@ jobs:
           test/pages/live_messages_test.dart
           test/pages/live_message_decorations_test.dart
           test/pages/live_room_features_test.dart
+          test/pages/live_rank_panels_test.dart
           test/pages/live_red_packet_panel_test.dart
           test/pages/live_compose_panels_test.dart
           test/services/live_room_actions_test.dart

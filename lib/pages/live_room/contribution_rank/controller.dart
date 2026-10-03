@@ -33,7 +33,9 @@ class ContributionRankController
   List<LiveContributionRankItem>? getDataList(
     LiveContributionRankData response,
   ) {
-    own.value = response.own;
+    if (page == 1 || response.own != null) {
+      own.value = response.own;
+    }
     return response.item;
   }
 
