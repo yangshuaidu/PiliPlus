@@ -27,6 +27,7 @@ class FakeTransport implements LiveGiftTransport {
   bool bagDisabled = false;
   void Function()? onCatalogRead;
   Map<String, dynamic>? response;
+  Map<String, dynamic>? catalogData;
   Completer<void>? postGate;
   final postStarted = Completer<void>();
 
@@ -39,26 +40,28 @@ class FakeTransport implements LiveGiftTransport {
     if (failReads) throw Exception('offline');
     if (path == LiveGiftService.catalogPath) onCatalogRead?.call();
     final data = switch (path) {
-      LiveGiftService.catalogPath => {
-        'gift_config': {
-          'base_config': {
-            'list': [giftConfig(price: price)],
-          },
-        },
-        'gift_data': {
-          'bag_tab_disable': bagDisabled ? 1 : 0,
-          'max_send_gift': 5000,
-          'room_gift_list': {
-            'gold_list': [
-              {
-                'gift_id': 10,
-                'special': {'is_use': 1},
-                'gift_scene': {'pay_type': 'send_gift'},
+      LiveGiftService.catalogPath =>
+        catalogData ??
+            {
+              'gift_config': {
+                'base_config': {
+                  'list': [giftConfig(price: price)],
+                },
               },
-            ],
-          },
-        },
-      },
+              'gift_data': {
+                'bag_tab_disable': bagDisabled ? 1 : 0,
+                'max_send_gift': 5000,
+                'room_gift_list': {
+                  'gold_list': [
+                    {
+                      'gift_id': 10,
+                      'special': {'is_use': 1},
+                      'gift_scene': {'pay_type': 'send_gift'},
+                    },
+                  ],
+                },
+              },
+            },
       LiveGiftService.bagPath => {
         'gift_config': [giftConfig(price: price)],
         'list': [

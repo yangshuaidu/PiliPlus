@@ -112,6 +112,57 @@ void main() {
     },
   );
 
+  test('official groups retain names, ordering and overlapping membership', () {
+    final groups = LiveGiftParser.groups({
+      'gift_data': {
+        'room_gift_list': {
+          'gold_list': [
+            {'gift_id': '10'},
+            {'gift_id': 10},
+          ],
+        },
+        'tab_list': [
+          {
+            'tab_id': 2,
+            'tab_name': '航海',
+            'position': 5,
+            'list': [
+              {'gift_id': 20},
+            ],
+          },
+          {
+            'tab_id': 11,
+            'tab_name': '互动',
+            'position': 2,
+            'list': [
+              {'gift_id': 10},
+              {'gift_id': 11},
+              {'gift_id': -1},
+            ],
+          },
+          {
+            'tab_id': 9,
+            'tab_name': '粉丝团',
+            'position': 4,
+            'list': [
+              {'gift_id': 11},
+            ],
+          },
+        ],
+      },
+    });
+    expect(groups.map((group) => group.name), ['常规', '互动', '粉丝团', '航海']);
+    expect(groups.map((group) => group.id), [
+      'room',
+      'tab:11',
+      'tab:9',
+      'tab:2',
+    ]);
+    expect(groups[0].giftIds, {10});
+    expect(groups[1].giftIds, {10, 11});
+    expect(groups[2].giftIds, {11});
+  });
+
   test('integer gold display preserves fractional batteries', () {
     expect(liveBatteryAmount(0), '0');
     expect(liveBatteryAmount(100), '1');

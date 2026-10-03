@@ -21,6 +21,8 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
   LiveBagItem? _bagItem;
   LiveGiftResult? _pending;
   bool _bag = false;
+  String? _groupId;
+  bool _priceDescending = false;
   bool _busy = false;
   bool _confirming = false;
   String? _message;
@@ -49,6 +51,9 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
       if (!mounted) return;
       setState(() {
         _snapshot = snapshot;
+        if (!snapshot.groups.any((group) => group.id == _groupId)) {
+          _groupId = null;
+        }
         _pending = pending;
         _selected = null;
         _bagItem = null;
@@ -195,12 +200,39 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
     final colorScheme = Theme.of(context).colorScheme;
     final selected = _selected;
     final count = int.tryParse(_quantity.text) ?? 0;
+    final gifts = snapshot?.gifts ?? <LiveGift>[];
+    final groups = [
+      for (final group in snapshot?.groups ?? <LiveGiftGroup>[])
+        if (gifts.any((gift) => group.giftIds.contains(gift.id))) group,
+    ];
+    final selectedGroup = groups
+        .where((group) => group.id == _groupId)
+        .firstOrNull;
     final entries = _bag
         ? [
             for (final item in snapshot?.bag ?? <LiveBagItem>[])
               (item.gift, item),
           ]
-        : [for (final gift in snapshot?.gifts ?? <LiveGift>[]) (gift, null)];
+        : [
+            for (final gift in gifts)
+              if (selectedGroup == null ||
+                  selectedGroup.giftIds.contains(gift.id))
+                (gift, null),
+          ];
+    if (!_bag) {
+      final originalOrder = {
+        for (final (index, gift) in gifts.indexed) gift.id: index,
+      };
+      entries.sort((a, b) {
+        if (a.$1.priceKnown != b.$1.priceKnown) {
+          return a.$1.priceKnown ? -1 : 1;
+        }
+        final byPrice = a.$1.price.compareTo(b.$1.price);
+        return byPrice != 0
+            ? (_priceDescending ? -byPrice : byPrice)
+            : originalOrder[a.$1.id]!.compareTo(originalOrder[b.$1.id]!);
+      });
+    }
     return PopScope(
       canPop: !_busy,
       child: Padding(
@@ -256,6 +288,7 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
+                        runSpacing: 4,
                         children: [
                           ChoiceChip(
                             label: const Text('电池礼物'),
@@ -279,8 +312,68 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
                                     _bagItem = null;
                                   }),
                           ),
+                          if (!_bag)
+                            PopupMenuButton<bool>(
+                              tooltip: '按电池价格排序',
+                              enabled: !_busy,
+                              initialValue: _priceDescending,
+                              onSelected: (descending) => setState(
+                                () => _priceDescending = descending,
+                              ),
+                              itemBuilder: (_) => const [
+                                PopupMenuItem(
+                                  value: false,
+                                  child: Text('价格从低到高'),
+                                ),
+                                PopupMenuItem(
+                                  value: true,
+                                  child: Text('价格从高到低'),
+                                ),
+                              ],
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 10,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.swap_vert, size: 18),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _priceDescending ? '价格从高到低' : '价格从低到高',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                         ],
                       ),
+                      if (!_bag && groups.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              ChoiceChip(
+                                label: const Text('全部'),
+                                selected: selectedGroup == null,
+                                onSelected: _busy
+                                    ? null
+                                    : (_) => _selectGroup(null),
+                              ),
+                              for (final group in groups)
+                                ChoiceChip(
+                                  label: Text(group.name),
+                                  selected: selectedGroup?.id == group.id,
+                                  onSelected: _busy
+                                      ? null
+                                      : (_) => _selectGroup(group.id),
+                                ),
+                            ],
+                          ),
+                        ),
                       if (_busy && !_confirming)
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 8),
@@ -355,6 +448,9 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
                                   identical(selected, gift) &&
                                   identical(_bagItem, bag);
                               return Material(
+                                key: ValueKey(
+                                  'live-gift-${gift.id}-${bag?.bagId ?? 0}',
+                                ),
                                 color: isSelected
                                     ? colorScheme.secondaryContainer
                                     : colorScheme.surfaceContainerLow,
@@ -409,7 +505,9 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
                                         ),
                                         Text(
                                           bag == null
-                                              ? '${gift.displayPrice} 电池'
+                                              ? gift.priceKnown
+                                                    ? '${gift.displayPrice} 电池'
+                                                    : '价格未知'
                                               : '库存 ${bag.quantity}',
                                           style: const TextStyle(fontSize: 12),
                                         ),
@@ -496,5 +594,14 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
         ),
       ),
     );
+  }
+
+  void _selectGroup(String? id) {
+    setState(() {
+      _groupId = id;
+      _selected = null;
+      _bagItem = null;
+      _message = null;
+    });
   }
 }

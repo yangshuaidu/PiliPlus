@@ -50,6 +50,7 @@ jobs:
           test/utils/accounts/deleted_account_test.dart
           test/services/live_gift_service_test.dart
           test/pages/live_gift_panel_test.dart
+          test/common/live_room_badge_test.dart
 
       - name: Build Windows
         run: |

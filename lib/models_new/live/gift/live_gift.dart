@@ -97,10 +97,23 @@ class LiveWallet {
   const LiveWallet({this.gold});
 }
 
+/// Membership comes from the room catalogue, not inferred from gift names.
+class LiveGiftGroup {
+  final String id;
+  final String name;
+  final Set<int> giftIds;
+  const LiveGiftGroup({
+    required this.id,
+    required this.name,
+    required this.giftIds,
+  });
+}
+
 class LiveGiftSnapshot {
   final Object accountIdentity;
   final int accountUid;
   final List<LiveGift> gifts;
+  final List<LiveGiftGroup> groups;
   final List<LiveBagItem> bag;
   final LiveWallet wallet;
   final Map<String, String> errors;
@@ -108,6 +121,7 @@ class LiveGiftSnapshot {
     required this.accountIdentity,
     required this.accountUid,
     required this.gifts,
+    this.groups = const [],
     required this.bag,
     required this.wallet,
     required this.errors,

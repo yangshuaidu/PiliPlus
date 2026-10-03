@@ -132,6 +132,41 @@ abstract final class LiveGiftParser {
     ];
   }
 
+  static List<LiveGiftGroup> groups(Map<String, dynamic> data) {
+    final giftData = liveMap(data['gift_data']);
+    final room = liveMap(giftData['room_gift_list']);
+    Set<int> ids(Object? entries) => {
+      for (final entry in liveMaps(entries))
+        if (liveInt(entry['gift_id'] ?? entry['id']) case final int id)
+          if (id > 0) id,
+    };
+    final tabs = liveMaps(giftData['tab_list']).indexed.toList()
+      ..sort((a, b) {
+        final byPosition = (liveInt(a.$2['position']) ?? a.$1).compareTo(
+          liveInt(b.$2['position']) ?? b.$1,
+        );
+        return byPosition != 0 ? byPosition : a.$1.compareTo(b.$1);
+      });
+    return [
+      LiveGiftGroup(
+        id: 'room',
+        name: '常规',
+        giftIds: {...ids(room['gold_list']), ...ids(room['silver_list'])},
+      ),
+      for (final (index, tab) in tabs)
+        if (tab['tab_name']?.toString().trim() case final String name
+            when name.isNotEmpty)
+          LiveGiftGroup(
+            id: switch (liveInt(tab['tab_id'])) {
+              final int id => 'tab:$id',
+              _ => 'tab-index:$index',
+            },
+            name: name,
+            giftIds: ids(tab['list']),
+          ),
+    ];
+  }
+
   static List<LiveBagItem> bag(
     Map<String, dynamic> data,
     int roomId,

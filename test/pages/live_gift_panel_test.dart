@@ -16,6 +16,71 @@ Future<void> openGiftPanel(WidgetTester tester, LiveGiftService service) async {
   await tester.pumpAndSettle();
 }
 
+Map<String, dynamic> groupedCatalogue() => {
+  'gift_config': {
+    'base_config': {
+      'list': [
+        {...giftConfig(price: 100), 'id': 10, 'name': '低价A'},
+        {...giftConfig(price: 29900), 'id': 11, 'name': '高价'},
+        {...giftConfig(price: 100), 'id': 12, 'name': '同价B'},
+        {...giftConfig(), 'id': 13, 'name': '未知价', 'price': null},
+        {...giftConfig(price: 50000), 'id': 14, 'name': '航海礼物'},
+      ],
+    },
+  },
+  'gift_data': {
+    'max_send_gift': 99,
+    'room_gift_list': {
+      'gold_list': [
+        {'gift_id': 11},
+        {'gift_id': 10},
+        {'gift_id': 12},
+        {'gift_id': 13},
+      ],
+    },
+    'tab_list': [
+      {
+        'tab_id': 11,
+        'tab_name': '互动',
+        'position': 2,
+        'list': [
+          {'gift_id': 11},
+        ],
+      },
+      {
+        'tab_id': 9,
+        'tab_name': '粉丝团',
+        'position': 4,
+        'list': [
+          {'gift_id': 12},
+        ],
+      },
+      {
+        'tab_id': 2,
+        'tab_name': '航海',
+        'position': 5,
+        'list': [
+          {
+            'gift_id': 14,
+            'special': {'is_use': 0, 'tips': '需要大航海权限'},
+          },
+        ],
+      },
+    ],
+  },
+};
+
+List<String> visibleGiftNames(WidgetTester tester) => tester
+    .widgetList<Text>(
+      find.descendant(of: find.byType(GridView), matching: find.byType(Text)),
+    )
+    .map((text) => text.data)
+    .whereType<String>()
+    .where(
+      (name) => {'低价A', '高价', '同价B', '未知价', '航海礼物'}.contains(name),
+    )
+    .toList();
+
 void main() {
   late FakeTransport transport;
   late LiveGiftService service;
@@ -32,6 +97,68 @@ void main() {
     );
   });
   tearDown(() => service.dispose());
+
+  testWidgets(
+    'battery prices sort numerically, stably, with unknown prices last',
+    (tester) async {
+      transport.catalogData = groupedCatalogue();
+      await openGiftPanel(tester, service);
+      expect(visibleGiftNames(tester), ['低价A', '同价B', '高价', '航海礼物', '未知价']);
+      await tester.tap(find.byTooltip('按电池价格排序'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('价格从高到低').last);
+      await tester.pumpAndSettle();
+      expect(visibleGiftNames(tester), ['航海礼物', '高价', '低价A', '同价B', '未知价']);
+      expect(transport.postCount, 0);
+      expect(find.text('价格未知'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'official group filters clear a hidden selection and retain restrictions',
+    (tester) async {
+      transport.catalogData = groupedCatalogue();
+      await openGiftPanel(tester, service);
+      await tester.tap(find.text('低价A'));
+      await tester.pump();
+      await tester.tap(find.text('粉丝团'));
+      await tester.pumpAndSettle();
+      expect(visibleGiftNames(tester), ['同价B']);
+      expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, '赠送'))
+            .onPressed,
+        isNull,
+      );
+      await tester.tap(find.text('航海'));
+      await tester.pumpAndSettle();
+      expect(visibleGiftNames(tester), ['航海礼物']);
+      expect(find.text('暂不可送'), findsOneWidget);
+      await tester.tap(find.text('航海礼物'));
+      await tester.pumpAndSettle();
+      expect(find.text('需要大航海权限'), findsOneWidget);
+      expect(transport.postCount, 0);
+    },
+  );
+
+  testWidgets('refresh removes a stale group and returns to all gifts', (
+    tester,
+  ) async {
+    transport.catalogData = groupedCatalogue();
+    await openGiftPanel(tester, service);
+    await tester.tap(find.text('互动'));
+    await tester.pumpAndSettle();
+    expect(visibleGiftNames(tester), ['高价']);
+    transport.catalogData = null;
+    await tester.tap(find.byTooltip('刷新礼物'));
+    await tester.pumpAndSettle();
+    expect(find.text('测试礼物'), findsOneWidget);
+    expect(find.text('互动'), findsNothing);
+    expect(
+      tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '全部')).selected,
+      isTrue,
+    );
+  });
 
   testWidgets(
     'paid confirmation shows account, recipient, quantity and exact charge',
@@ -80,6 +207,8 @@ void main() {
     tester,
   ) async {
     await openGiftPanel(tester, service);
+    await tester.ensureVisible(find.text('测试礼物'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('测试礼物'));
     await tester.pump();
     await tester.enterText(find.byType(TextField), '');
@@ -98,8 +227,44 @@ void main() {
     tester.view.viewInsets = const FakeViewPadding(bottom: 260);
     addTearDown(tester.view.reset);
     await openGiftPanel(tester, service);
+    await tester.ensureVisible(find.text('测试礼物'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('测试礼物'));
     await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, '赠送'))
+          .onPressed,
+      isNotNull,
+    );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'official groups remain usable in a small viewport with keyboard',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+      addTearDown(tester.view.reset);
+      transport.catalogData = groupedCatalogue();
+      await openGiftPanel(tester, service);
+      await tester.ensureVisible(find.text('粉丝团'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('粉丝团'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('同价B'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('同价B'));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, '赠送'))
+            .onPressed,
+        isNotNull,
+      );
+      expect(tester.takeException(), isNull);
+      expect(transport.postCount, 0);
+    },
+  );
 }

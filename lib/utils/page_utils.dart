@@ -6,6 +6,7 @@ import 'package:PiliPlus/common/widgets/image_viewer/hero_dialog_route.dart';
 import 'package:PiliPlus/grpc/im.dart';
 import 'package:PiliPlus/http/dynamics.dart';
 import 'package:PiliPlus/http/loading_state.dart';
+import 'package:PiliPlus/http/member.dart';
 import 'package:PiliPlus/http/search.dart';
 import 'package:PiliPlus/http/video.dart';
 import 'package:PiliPlus/models/common/image_preview_type.dart';
@@ -517,6 +518,36 @@ abstract final class PageUtils {
       off: off,
       preventDuplicates: off,
     );
+  }
+
+  /// Message sessions provide the user ID and live flag, but no room ID.
+  static Future<void> toLiveRoomByMid(BuildContext context, int? mid) async {
+    if (mid == null || mid <= 0) {
+      SmartDialog.showToast('暂无直播间信息');
+      return;
+    }
+    final route = ModalRoute.of(context);
+    try {
+      final result = await MemberHttp.memberInfo(mid: mid);
+      if (!context.mounted || route?.isCurrent == false) return;
+      switch (result) {
+        case Success(:final response):
+          final roomId = response.liveRoom?.roomId;
+          if (roomId != null && roomId > 0) {
+            toLiveRoom(roomId);
+          } else {
+            SmartDialog.showToast('未找到该用户的直播间');
+          }
+        case Error():
+          result.toast();
+        case Loading():
+          break;
+      }
+    } catch (_) {
+      if (context.mounted) {
+        SmartDialog.showToast('获取直播间失败，请稍后重试');
+      }
+    }
   }
 
   static Future<void>? toVideoPage({

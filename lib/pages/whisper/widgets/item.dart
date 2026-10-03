@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import 'package:PiliPlus/common/assets.dart';
 import 'package:PiliPlus/common/widgets/badge.dart';
 import 'package:PiliPlus/common/widgets/dialog/dialog.dart';
 import 'package:PiliPlus/common/widgets/dialog/simple_dialog_option.dart';
 import 'package:PiliPlus/common/widgets/flutter/list_tile.dart';
+import 'package:PiliPlus/common/widgets/live_room_badge.dart';
 import 'package:PiliPlus/common/widgets/pendant_avatar.dart';
 import 'package:PiliPlus/grpc/bilibili/app/im/v1.pb.dart'
     show Session, SessionId, SessionPageType;
@@ -13,7 +13,6 @@ import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/msg.dart';
 import 'package:PiliPlus/pages/whisper_secondary/view.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
-import 'package:PiliPlus/utils/extension/num_ext.dart';
 import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:PiliPlus/utils/platform_utils.dart';
@@ -317,11 +316,13 @@ class WhisperSessionItem extends StatelessWidget {
                     text: item.sessionInfo.userLabel.style.borderedLabel.text,
                   ),
                 if (item.sessionInfo.isLive)
-                  Image.asset(
-                    Assets.livingRect,
-                    height: 15,
-                    cacheHeight: 15.cacheSize(context),
-                    filterQuality: .low,
+                  LiveRoomBadge(
+                    onOpen: () => PageUtils.toLiveRoomByMid(
+                      context,
+                      item.sessionInfo.avatar.hasMid()
+                          ? item.sessionInfo.avatar.mid.toInt()
+                          : item.id.privateId.talkerUid.toInt(),
+                    ),
                   ),
               ],
             ),

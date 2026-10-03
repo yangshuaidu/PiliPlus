@@ -143,6 +143,7 @@ class LiveGiftService {
         roomId,
         anchorUid,
       ).where((gift) => gift.coinType == 'gold').toList(growable: false),
+      groups: LiveGiftParser.groups(data[0]),
       bag: bagDisabled
           ? const []
           : LiveGiftParser.bag(data[1], roomId, anchorUid, now()),
