@@ -88,6 +88,9 @@ class LiveGiftEffects {
       });
     } finally {
       _advancing = false;
+      if (!_disposed && current.value == null && _queue.isNotEmpty && enabled.value) {
+        _next();
+      }
     }
   }
 

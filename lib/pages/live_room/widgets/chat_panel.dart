@@ -14,6 +14,7 @@ import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/pages/live_room/live_message_session.dart';
 import 'package:PiliPlus/models_new/live/live_superchat/item.dart';
 import 'package:PiliPlus/pages/live_room/controller.dart';
+import 'package:PiliPlus/pages/live_room/live_room_settings.dart';
 import 'package:PiliPlus/pages/live_room/superchat/superchat_card.dart';
 import 'package:PiliPlus/pages/member/widget/medal_widget.dart';
 import 'package:PiliPlus/pages/video/widgets/header_control.dart';
@@ -53,8 +54,8 @@ class LiveRoomChatPanel extends StatelessWidget {
       children: [
         Obx(
           () {
-            liveRoomController.filters.blocked.length;
-            final showBadges = liveRoomController.showMessageBadges.value;
+            liveRoomController.settings.revision.value;
+            final showBadges = liveRoomController.settings.enabled(LiveRoomOption.badges);
             return LiveListView.separated(
               key: const PageStorageKey(LiveRoomChatPanel),
               // multiply by 2 to account for separators

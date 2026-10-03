@@ -1,5 +1,5 @@
 import 'package:PiliPlus/pages/live_room/widgets/superchat_purchase_panel.dart';
-import 'package:PiliPlus/pages/live_room/live_message_filters.dart';
+import 'package:PiliPlus/pages/live_room/live_room_settings.dart';
 import 'package:PiliPlus/models_new/live/live_danmaku/live_user_badges.dart';
 import 'package:PiliPlus/models_new/live/live_danmaku/live_message_parser.dart';
 import 'package:PiliPlus/pages/live_room/live_message_session.dart';
@@ -47,6 +47,8 @@ import 'package:PiliPlus/utils/global_data.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
 import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
+import 'package:PiliPlus/utils/storage.dart';
+import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/theme_utils.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:PiliPlus/utils/video_utils.dart';
@@ -131,27 +133,48 @@ class LiveRoomController extends GetxController {
   late final giftEffects = LiveGiftEffects(
     loadCatalog: () => LiveHttp.liveGiftMaterials(roomId, ruid ?? 0),
   );
-  final filters = LiveMessageFilters();
+  final settings = LiveRoomSettings.shared;
+  Worker? _settingsWorker;
+  bool _showEmotes = true, _showLotteryDanmaku = true, _showSuperChats = true;
   final cornerEmoteUrl = Rxn<String>();
   Timer? _cornerEmoteTimer;
-  void updateMessageFilter(LiveMessageFilter filter, bool value) {
-    filters.set(filter, value);
-    if (value &&
-        (filter == LiveMessageFilter.gifts ||
-            filter == LiveMessageFilter.giftEffects)) {
-      giftEffects.clear();
-    }
-    if (value &&
-        (filter == LiveMessageFilter.cornerEmotes ||
-            filter == LiveMessageFilter.emotes)) {
+  void _applySettings() {
+    if (_closed) return;
+    giftEffects.setEnabled(settings.enabled(LiveRoomOption.giftEffects));
+    final emotes = settings.enabled(LiveRoomOption.emotes);
+    final lottery = settings.enabled(LiveRoomOption.lotteryDanmaku);
+    if (!settings.enabled(LiveRoomOption.cornerEmotes) || !emotes) {
       _cornerEmoteTimer?.cancel();
       cornerEmoteUrl.value = null;
     }
-    if (value && filter == LiveMessageFilter.superChat) {
+    if ((!emotes && _showEmotes) || (!lottery && _showLotteryDanmaku)) {
+      danmakuController?.clear();
+    }
+    _showEmotes = emotes;
+    _showLotteryDanmaku = lottery;
+    final superChats = settings.enabled(LiveRoomOption.superChats);
+    if (!superChats) {
       superChatMsg.clear();
       fsSC.value = null;
+    } else if (!_showSuperChats && showSuperChat) {
+      getSuperChatMsg();
     }
+    _showSuperChats = superChats;
     messages.refresh();
+  }
+
+  Future<void> setDanmakuVisible(bool value) async {
+    final previous = plPlayerController.enableShowLiveDanmaku.value;
+    plPlayerController.enableShowLiveDanmaku.value = value;
+    if (plPlayerController.tempPlayerConf) return;
+    try {
+      await GStorage.setting.put(SettingBoxKey.enableShowLiveDanmaku, value);
+    } catch (_) {
+      if (plPlayerController.enableShowLiveDanmaku.value == value) {
+        plPlayerController.enableShowLiveDanmaku.value = previous;
+      }
+      SmartDialog.showToast('弹幕开关未保存，请重试');
+    }
   }
 
   bool messageVisible(dynamic message) {
@@ -168,36 +191,15 @@ class LiveRoomController extends GetxController {
     if (message is SuperChatItem && isBlocked(message.message, message.uid)) {
       return false;
     }
-    if (message is LiveGiftMessage) {
-      return !filters.hides(LiveMessageFilter.gifts);
-    }
-    if (message is SuperChatItem) {
-      return !filters.hides(LiveMessageFilter.superChat);
-    }
-    if (message is LiveRoomNotice) {
-      return !(message.entry && filters.hides(LiveMessageFilter.entry)) &&
-          !(message.broadcast && filters.hides(LiveMessageFilter.gifts)) &&
-          !(message.lottery && filters.hides(LiveMessageFilter.lottery));
-    }
-    if (message is DanmakuMsg) {
-      if (filters.hides(LiveMessageFilter.emotes) &&
-          (message.uemote != null || message.emots?.isNotEmpty == true)) {
-        return false;
-      }
-      if (filters.hides(LiveMessageFilter.lottery) &&
-          (message.lottery ||
-              roomFeatures.activities.any(
-                (a) => a.danmaku.isNotEmpty && a.danmaku == message.text,
-              ))) {
-        return false;
-      }
-    }
-    return true;
+    return settings.allows(
+      message,
+      activityDanmaku: message is DanmakuMsg &&
+          roomFeatures.activities.any(
+            (a) => a.danmaku.isNotEmpty && a.danmaku == message.text,
+          ),
+    );
   }
 
-  final showRoomNotices = true.obs;
-  final showGiftMessages = true.obs;
-  final showMessageBadges = true.obs;
   final Set<String> _receivedNoticeIds = {};
   late final deliveryTracker = LiveDanmakuDeliveryTracker(
     onChanged: () {
@@ -341,7 +343,9 @@ class LiveRoomController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    filters.load();
+    settings.load();
+    _applySettings();
+    _settingsWorker = ever(settings.revision, (_) => _applySettings());
     scrollController = ScrollController()..addListener(listener);
     final account = Accounts.main;
     isLogin = account.isLogin;
@@ -602,8 +606,10 @@ class LiveRoomController extends GetxController {
     final res = await LiveHttp.superChatMsg(room);
     if (!_messageMatches(generation, room, account)) return;
     if (res.dataOrNull?.list case final list? when list.isNotEmpty) {
-      if (!filters.hides(LiveMessageFilter.superChat)) {
-        superChatMsg.addAll(list);
+      if (settings.enabled(LiveRoomOption.superChats)) {
+        superChatMsg.addAll(list.where((item) =>
+            !superChatMsg.any((old) => old.id == item.id) &&
+            messageVisible(item)));
       }
     }
   }
@@ -704,6 +710,7 @@ class LiveRoomController extends GetxController {
 
   @override
   void onClose() {
+    _settingsWorker?.dispose();
     _cornerEmoteTimer?.cancel();
     _closed = true;
     deliveryTracker.dispose();
@@ -789,7 +796,6 @@ class LiveRoomController extends GetxController {
       final notice = LiveRoomNotice.parse(obj, roomId);
       if (notice != null &&
           messageVisible(notice) &&
-          showRoomNotices.value &&
           !isBlocked(notice.text, notice.uid)) {
         if (notice.id.isEmpty || _receivedNoticeIds.add(notice.id)) {
           addDm(notice);
@@ -821,7 +827,7 @@ class LiveRoomController extends GetxController {
           final emoteUrl = liveAssetUrl(parsed.message.uemote?.url);
           if (parsed.message.uemote?.inPlayerArea == true &&
               emoteUrl.isNotEmpty &&
-              !filters.hides(LiveMessageFilter.cornerEmotes)) {
+              settings.enabled(LiveRoomOption.cornerEmotes)) {
             _cornerEmoteTimer?.cancel();
             cornerEmoteUrl.value = emoteUrl;
             _cornerEmoteTimer = Timer(
@@ -846,8 +852,7 @@ class LiveRoomController extends GetxController {
         case 'SEND_GIFT_V2':
         case 'GUARD_BUY':
           for (final gift in LiveGiftMessage.parseAll(obj)) {
-            if (filters.hides(LiveMessageFilter.gifts) ||
-                isBlocked(gift.giftName, gift.uid)) {
+            if (isBlocked(gift.giftName, gift.uid)) {
               continue;
             }
             if (gift.id.isNotEmpty) {
@@ -856,14 +861,14 @@ class LiveRoomController extends GetxController {
                 _receivedGiftIds.remove(_receivedGiftIds.first);
               }
             }
-            if (showGiftMessages.value) addDm(gift);
-            if (!filters.hides(LiveMessageFilter.giftEffects)) {
+            if (messageVisible(gift)) addDm(gift);
+            if (settings.enabled(LiveRoomOption.giftEffects)) {
               giftEffects.add(gift);
             }
           }
           break;
         case 'SUPER_CHAT_MESSAGE'
-            when showSuperChat && !filters.hides(LiveMessageFilter.superChat):
+            when showSuperChat && settings.enabled(LiveRoomOption.superChats):
           final item = SuperChatItem.fromJson(obj['data'], roomId);
           if (!messageVisible(item) ||
               superChatMsg.any((old) => old.id == item.id)) {

@@ -9,6 +9,8 @@ class LiveRoomNotice {
     this.uid = 0,
     this.name = '',
     this.entry = false,
+    this.follow = false,
+    this.share = false,
     this.broadcast = false,
     this.lottery = false,
     this.badges = const LiveUserBadges(),
@@ -16,7 +18,7 @@ class LiveRoomNotice {
   });
   final String text, name, id;
   final int uid;
-  final bool entry, broadcast, lottery;
+  final bool entry, follow, share, broadcast, lottery;
   final LiveUserBadges badges;
   static String _plain(dynamic value) {
     if (value is! String) return '';
@@ -45,7 +47,7 @@ class LiveRoomNotice {
             liveMap(user['base'])['name'] ?? data['uname'] ?? data['username'],
           );
     String text = '';
-    bool entry = false;
+    bool entry = false, follow = false, share = false;
     switch (cmd) {
       case 'INTERACT_WORD':
       case 'INTERACT_WORD_V2':
@@ -54,6 +56,8 @@ class LiveRoomNotice {
           return null;
         final type = liveInt(data['msg_type']);
         entry = type == 1;
+        follow = type == 2 || type == 4 || type == 5;
+        share = type == 3;
         text =
             const {
               1: '进入直播间',
@@ -127,6 +131,8 @@ class LiveRoomNotice {
       uid: uid,
       name: name,
       entry: entry,
+      follow: follow,
+      share: share,
       badges: badges,
       id: entry && uid > 0
           ? 'entry:$uid:${timestamp ~/ 5}'

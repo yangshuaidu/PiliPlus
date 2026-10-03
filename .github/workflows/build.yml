@@ -11,6 +11,12 @@ on:
     #         - "**.md"
     workflow_dispatch:
         inputs:
+            check_only:
+                description: "Run live checks without app packages"
+                required: false
+                default: false
+                type: boolean
+
             build_android:
                 description: "Build Android"
                 required: false
@@ -48,8 +54,14 @@ on:
                 type: string
 
 jobs:
+    checks:
+        if: ${{ github.event.inputs.check_only == 'true' }}
+        uses: ./.github/workflows/live_checks.yml
+        permissions:
+            contents: read
+
     android:
-        if: ${{ (github.event_name == 'pull_request' && github.repository == 'bggRGjQaUbCoE/PiliPlus') || github.event.inputs.build_android == 'true' }}
+        if: ${{ github.event.inputs.check_only != 'true' && ((github.event_name == 'pull_request' && github.repository == 'bggRGjQaUbCoE/PiliPlus') || github.event.inputs.build_android == 'true') }}
         name: Release Android
         runs-on: ubuntu-latest
         permissions: write-all
@@ -82,29 +94,9 @@ jobs:
               shell: pwsh
               run: lib/scripts/patch.ps1 android
 
-            - name: Analyze live interactions
-              run: >-
-                flutter analyze --no-pub --no-fatal-infos
-                lib/http/live.dart lib/models_new/live lib/pages/live_room
-                lib/pages/live_dm_block lib/tcp/live.dart
-                lib/services/live_gift_service.dart lib/services/live_red_packet_service.dart
-                lib/services/live_activity_service.dart lib/services/live_superchat_service.dart
-                test
-            - name: Test live interactions and adaptive panels
-              run: >-
-                flutter test --no-pub --concurrency=1
-                test/utils/accounts/deleted_account_test.dart
-                test/services/live_gift_service_test.dart
-                test/pages/live_gift_panel_test.dart
-                test/common/live_room_badge_test.dart
-                test/pages/live_messages_test.dart
-                test/pages/live_message_decorations_test.dart
-                test/pages/live_room_features_test.dart
-                test/pages/live_rank_panels_test.dart
-                test/pages/live_red_packet_panel_test.dart
-                test/pages/live_compose_panels_test.dart
-                test/services/live_room_actions_test.dart
-                test/services/live_superchat_service_test.dart
+            - name: Analyze and test live interactions
+              shell: pwsh
+              run: tool/check_live.ps1
 
             - name: Write key
               if: github.event_name == 'workflow_dispatch'
@@ -169,28 +161,28 @@ jobs:
                   path: PiliPlus_android_*_x86_64.apk
 
     ios:
-        if: ${{ (github.event_name == 'pull_request' && github.repository == 'bggRGjQaUbCoE/PiliPlus') || github.event.inputs.build_ios == 'true' }}
+        if: ${{ github.event.inputs.check_only != 'true' && ((github.event_name == 'pull_request' && github.repository == 'bggRGjQaUbCoE/PiliPlus') || github.event.inputs.build_ios == 'true') }}
         uses: ./.github/workflows/ios.yml
         permissions: write-all
         with:
             tag: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || '' }}
 
     mac:
-        if: ${{ github.event.inputs.build_mac == 'true' }}
+        if: ${{ github.event.inputs.check_only != 'true' && github.event.inputs.build_mac == 'true' }}
         uses: ./.github/workflows/mac.yml
         permissions: write-all
         with:
             tag: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || '' }}
 
     win_x64:
-        if: ${{ (github.event_name == 'pull_request' && github.repository == 'bggRGjQaUbCoE/PiliPlus') || github.event.inputs.build_win_x64 == 'true' }}
+        if: ${{ github.event.inputs.check_only != 'true' && ((github.event_name == 'pull_request' && github.repository == 'bggRGjQaUbCoE/PiliPlus') || github.event.inputs.build_win_x64 == 'true') }}
         uses: ./.github/workflows/win_x64.yml
         permissions: write-all
         with:
             tag: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || '' }}
 
     linux_x64:
-        if: ${{ github.event.inputs.build_linux_x64 == 'true' }}
+        if: ${{ github.event.inputs.check_only != 'true' && github.event.inputs.build_linux_x64 == 'true' }}
         uses: ./.github/workflows/linux_x64.yml
         permissions: write-all
         with:

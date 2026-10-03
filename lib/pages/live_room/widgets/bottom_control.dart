@@ -1,4 +1,5 @@
 import 'package:PiliPlus/pages/live_room/widgets/message_filter_panel.dart';
+import 'package:PiliPlus/pages/live_room/live_room_settings.dart';
 import 'package:PiliPlus/common/widgets/custom_icon.dart';
 import 'package:PiliPlus/pages/live_room/controller.dart';
 import 'package:PiliPlus/pages/live_room/widgets/gift_sheet.dart';
@@ -7,8 +8,6 @@ import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/video_fit_type.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/common_btn.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/play_pause_btn.dart';
-import 'package:PiliPlus/utils/storage.dart';
-import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/theme_utils.dart';
 import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart';
@@ -98,16 +97,24 @@ class _BottomControlState extends State<BottomControl> with HeaderMixin {
                               ?.parentAreaId,
                         ),
                       ),
-                    ComBtn(
-                      height: 30,
-                      tooltip: '屏蔽',
-                      icon: const Icon(
-                        size: 18,
-                        Icons.block,
-                        color: Colors.white,
+                    for (final section in [LiveSettingsSection.gifts, LiveSettingsSection.notifications])
+                      ComBtn(
+                        height: 30,
+                        tooltip: section.title,
+                        icon: Icon(
+                          section == LiveSettingsSection.gifts
+                              ? Icons.card_giftcard_outlined
+                              : Icons.notifications_outlined,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                        onTap: () => showLiveSettings(
+                          context,
+                          liveRoomCtr,
+                          section: section,
+                          onDisplaySettings: () => showSetDanmaku(isLive: true),
+                        ),
                       ),
-                      onTap: () => showLiveMessageFilters(context, liveRoomCtr),
-                    ),
                     const SizedBox(width: 3),
                     Obx(
                       () {
@@ -127,17 +134,7 @@ class _BottomControlState extends State<BottomControl> with HeaderMixin {
                                   CustomIcons.dm_off,
                                   color: Colors.white,
                                 ),
-                          onTap: () {
-                            final newVal = !enableShowLiveDanmaku;
-                            plPlayerController.enableShowLiveDanmaku.value =
-                                newVal;
-                            if (!plPlayerController.tempPlayerConf) {
-                              GStorage.setting.put(
-                                SettingBoxKey.enableShowLiveDanmaku,
-                                newVal,
-                              );
-                            }
-                          },
+                          onTap: () => liveRoomCtr.setDanmakuVisible(!enableShowLiveDanmaku),
                         );
                       },
                     ),
@@ -149,7 +146,11 @@ class _BottomControlState extends State<BottomControl> with HeaderMixin {
                         CustomIcons.dm_settings,
                         color: Colors.white,
                       ),
-                      onTap: () => showSetDanmaku(isLive: true),
+                      onTap: () => showLiveSettings(
+                        context,
+                        liveRoomCtr,
+                        onDisplaySettings: () => showSetDanmaku(isLive: true),
+                      ),
                     ),
                     Obx(
                       () => PopupMenuButton<VideoFitType>(

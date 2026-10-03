@@ -1,0 +1,40 @@
+name: Check live interactions
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+          cache: true
+      - name: Apply Flutter patches
+        shell: pwsh
+        run: lib/scripts/patch.ps1 android
+      - name: Format live settings changes
+        shell: pwsh
+        run: |
+          $paths = @('lib/pages/live_room', 'lib/models_new/live/live_danmaku/live_room_notice.dart', 'lib/pages/video/widgets/header_mixin.dart', 'test/pages/live_settings_test.dart', 'test/pages/live_message_decorations_test.dart')
+          dart format @paths
+          $formatExit = $LASTEXITCODE
+          git diff --output=live-format.patch -- @paths
+          if ($formatExit -ne 0) { exit $formatExit }
+      - name: Analyze and test
+        shell: pwsh
+        run: tool/check_live.ps1
+      - name: Upload formatting patch
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          archive: false
+          name: live-format.patch
+          path: live-format.patch

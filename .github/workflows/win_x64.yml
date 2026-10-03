@@ -44,29 +44,9 @@ jobs:
         shell: pwsh
         run: lib/scripts/patch.ps1 windows
 
-      - name: Analyze live interactions
-        run: >-
-          flutter analyze --no-pub --no-fatal-infos
-          lib/http/live.dart lib/models_new/live lib/pages/live_room
-          lib/pages/live_dm_block lib/tcp/live.dart
-          lib/services/live_gift_service.dart lib/services/live_red_packet_service.dart
-          lib/services/live_activity_service.dart lib/services/live_superchat_service.dart
-          test
-      - name: Test live interactions and adaptive panels
-        run: >-
-          flutter test --no-pub --concurrency=1
-          test/utils/accounts/deleted_account_test.dart
-          test/services/live_gift_service_test.dart
-          test/pages/live_gift_panel_test.dart
-          test/common/live_room_badge_test.dart
-          test/pages/live_messages_test.dart
-          test/pages/live_message_decorations_test.dart
-          test/pages/live_room_features_test.dart
-          test/pages/live_rank_panels_test.dart
-          test/pages/live_red_packet_panel_test.dart
-          test/pages/live_compose_panels_test.dart
-          test/services/live_room_actions_test.dart
-          test/services/live_superchat_service_test.dart
+      - name: Analyze and test live interactions
+        shell: pwsh
+        run: tool/check_live.ps1
 
       - name: Build Windows
         run: |

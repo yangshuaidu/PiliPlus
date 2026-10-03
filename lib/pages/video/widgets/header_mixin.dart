@@ -275,8 +275,11 @@ mixin HeaderMixin<T extends StatefulWidget> on State<T> {
                         ],
                       ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Text(
                           '显示区域 ${(DanmakuOptions.danmakuShowArea * 100).toStringAsFixed(1)}%',
@@ -295,8 +298,11 @@ mixin HeaderMixin<T extends StatefulWidget> on State<T> {
                         onChanged: updateShowArea,
                       ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Text(
                           '不透明度 ${(plPlayerController.danmakuOpacity * 100).toStringAsFixed(1)}%',
@@ -316,8 +322,11 @@ mixin HeaderMixin<T extends StatefulWidget> on State<T> {
                         onChanged: updateOpacity,
                       ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Text(
                           '字体粗细 ${DanmakuOptions.danmakuFontWeight + 1}（可能无法精确调节）',
@@ -336,8 +345,11 @@ mixin HeaderMixin<T extends StatefulWidget> on State<T> {
                         onChanged: updateFontWeight,
                       ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Text('描边粗细 ${DanmakuOptions.danmakuStrokeWidth}'),
                         resetBtn(theme, 1.5, () => updateStrokeWidth(1.5)),
@@ -354,8 +366,11 @@ mixin HeaderMixin<T extends StatefulWidget> on State<T> {
                         onChanged: updateStrokeWidth,
                       ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Text(
                           '字体大小 ${(DanmakuOptions.danmakuFontScale * 100).toStringAsFixed(1)}%',
@@ -375,8 +390,11 @@ mixin HeaderMixin<T extends StatefulWidget> on State<T> {
                         onChanged: updateFontSize,
                       ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Text(
                           '全屏字体大小 ${(DanmakuOptions.danmakuFontScaleFS * 100).toStringAsFixed(1)}%',
@@ -396,8 +414,11 @@ mixin HeaderMixin<T extends StatefulWidget> on State<T> {
                         onChanged: updateFontSizeFS,
                       ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Text('滚动弹幕时长 ${DanmakuOptions.danmakuDuration} 秒'),
                         resetBtn(theme, 7.0, () => updateDuration(7.0)),
@@ -414,8 +435,11 @@ mixin HeaderMixin<T extends StatefulWidget> on State<T> {
                         onChanged: updateDuration,
                       ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Text(
                           '静态弹幕时长 ${DanmakuOptions.danmakuStaticDuration} 秒',
@@ -434,8 +458,11 @@ mixin HeaderMixin<T extends StatefulWidget> on State<T> {
                         onChanged: updateStaticDuration,
                       ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Text('弹幕行高 ${DanmakuOptions.danmakuLineHeight}'),
                         resetBtn(theme, 1.6, () => updateLineHeight(1.6)),

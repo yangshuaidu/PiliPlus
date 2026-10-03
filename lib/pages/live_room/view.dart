@@ -1,4 +1,6 @@
 import 'package:PiliPlus/pages/live_room/widgets/message_filter_panel.dart';
+import 'package:PiliPlus/pages/live_room/live_room_settings.dart';
+import 'package:PiliPlus/pages/video/widgets/header_mixin.dart';
 
 import 'dart:io';
 import 'dart:math';
@@ -74,12 +76,12 @@ class LiveRoomPage extends StatefulWidget {
 }
 
 class _LiveRoomPageState extends State<LiveRoomPage>
-    with WidgetsBindingObserver, RouteAware, RouteAwareMixin {
+    with HeaderMixin<LiveRoomPage>, WidgetsBindingObserver, RouteAware, RouteAwareMixin {
   late final fullScreenSCWidth = Pref.fullScreenSCWidth;
   final String heroTag = Utils.generateRandomString(6);
   late final LiveRoomController _liveRoomController;
+  @override
   late final PlPlayerController plPlayerController;
-  bool get isFullScreen => plPlayerController.isFullScreen.value;
 
   late final GlobalKey pageKey = GlobalKey();
   late final GlobalKey chatKey = GlobalKey();
@@ -778,17 +780,26 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                     ],
                   ),
                 ),
-              PopupMenuItem(
-                onTap: () =>
-                    showLiveMessageFilters(context, _liveRoomController),
-                child: const Row(
-                  children: [
-                    Icon(Icons.chat_bubble_outline, size: 19),
-                    SizedBox(width: 10),
-                    Text('直播消息与屏蔽'),
-                  ],
+              for (final section in LiveSettingsSection.values)
+                PopupMenuItem(
+                  onTap: () => showLiveSettings(
+                    context,
+                    _liveRoomController,
+                    section: section,
+                    onDisplaySettings: () => showSetDanmaku(isLive: true),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(switch (section) {
+                        LiveSettingsSection.danmaku => Icons.chat_bubble_outline,
+                        LiveSettingsSection.gifts => Icons.card_giftcard_outlined,
+                        LiveSettingsSection.notifications => Icons.notifications_outlined,
+                      }, size: 19),
+                      const SizedBox(width: 10),
+                      Flexible(child: Text(section.title)),
+                    ],
+                  ),
                 ),
-              ),
               PopupMenuItem(
                 onTap: () => Utils.copyText(liveUrl),
                 child: const Row(
@@ -966,17 +977,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                       height: 34,
                       child: IconButton(
                         style: IconButton.styleFrom(padding: .zero),
-                        onPressed: () {
-                          final newVal = !enableShowLiveDanmaku;
-                          plPlayerController.enableShowLiveDanmaku.value =
-                              newVal;
-                          if (!plPlayerController.tempPlayerConf) {
-                            GStorage.setting.put(
-                              SettingBoxKey.enableShowLiveDanmaku,
-                              newVal,
-                            );
-                          }
-                        },
+                        onPressed: () => _liveRoomController.setDanmakuVisible(!enableShowLiveDanmaku),
                         icon: enableShowLiveDanmaku
                             ? const Icon(
                                 size: 22,
