@@ -144,17 +144,22 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       if (compact) {
-        await tester.scrollUntilVisible(
-          find.text('在官方页面上舰'),
-          140,
-          scrollable: find.byType(Scrollable),
-        );
-        await tester.pumpAndSettle();
+        final scroll = tester.state<ScrollableState>(find.byType(Scrollable));
+        expect(scroll.position.maxScrollExtent, greaterThan(0));
+        // Re-evaluate the extent as the lazy list builds its remaining rows.
+        for (var attempt = 0; attempt < 5; attempt++) {
+          scroll.position.jumpTo(scroll.position.maxScrollExtent);
+          await tester.pumpAndSettle();
+          if (find.text('在官方页面上舰').hitTestable().evaluate().isNotEmpty) {
+            break;
+          }
+        }
       }
       expect(find.textContaining('我 · 测试账号'), findsOneWidget);
       expect(find.text('#6'), findsOneWidget);
       expect(find.text('提督'), findsOneWidget);
       expect(find.text('在官方页面上舰'), findsOneWidget);
+      expect(find.text('在官方页面上舰').hitTestable(), findsOneWidget);
       expect(find.text('hidden-name'), findsNothing);
       expect(find.text('舰长'), findsNothing);
       expect(
