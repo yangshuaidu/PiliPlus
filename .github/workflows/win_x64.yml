@@ -44,6 +44,13 @@ jobs:
         shell: pwsh
         run: lib/scripts/patch.ps1 windows
 
+      - name: Test live gifts and account handling
+        run: >-
+          flutter test --no-pub --concurrency=1
+          test/utils/accounts/deleted_account_test.dart
+          test/services/live_gift_service_test.dart
+          test/pages/live_gift_panel_test.dart
+
       - name: Build Windows
         run: |
           fastforge package --platform windows --targets exe --flutter-build-args="dart-define-from-file=pili_release.json,no-pub" --skip-clean
