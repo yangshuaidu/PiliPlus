@@ -5,10 +5,14 @@ import 'package:material_ui/material_ui.dart';
 class LiveGiftPanel extends StatefulWidget {
   final LiveGiftService service;
   final String anchorName;
+  final VoidCallback? onRecharge;
+  final Future<void> Function()? onRedPacket;
   const LiveGiftPanel({
     super.key,
     required this.service,
     required this.anchorName,
+    this.onRecharge,
+    this.onRedPacket,
   });
   @override
   State<LiveGiftPanel> createState() => _LiveGiftPanelState();
@@ -159,7 +163,7 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
         builder: (context) => AlertDialog(
           title: const Text('已核对官方记录？'),
           content: const Text(
-            '请先在官方直播间核对送礼记录、背包和余额。解除后可以发起新的赠送；这不会重发上次礼物，也不会把未知结果标记为成功。',
+            '请先核对官方送礼记录、红包记录、背包和余额。解除后可以发起新的赠送；这不会重发上次操作，也不会把未知结果标记为成功。',
           ),
           actions: [
             TextButton(
@@ -249,27 +253,91 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+                  padding: const EdgeInsets.fromLTRB(12, 4, 4, 0),
                   child: Row(
                     children: [
-                      const Expanded(
-                        child: Text(
-                          '直播礼物',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              ChoiceChip(
+                                label: const Text('礼物'),
+                                selected: !_bag && selectedGroup == null,
+                                onSelected: _busy
+                                    ? null
+                                    : (_) => _selectGroup(null),
+                              ),
+                              PopupMenuButton<bool>(
+                                tooltip: '按电池价格排序',
+                                enabled: !_busy && !_bag,
+                                initialValue: _priceDescending,
+                                onSelected: (value) =>
+                                    setState(() => _priceDescending = value),
+                                icon: const Icon(Icons.swap_vert, size: 18),
+                                itemBuilder: (_) => const [
+                                  PopupMenuItem(
+                                    value: false,
+                                    child: Text('价格从低到高'),
+                                  ),
+                                  PopupMenuItem(
+                                    value: true,
+                                    child: Text('价格从高到低'),
+                                  ),
+                                ],
+                              ),
+                              for (final group in groups.where(
+                                (group) => group.id != 'room',
+                              ))
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 4),
+                                  child: ChoiceChip(
+                                    label: Text(group.name),
+                                    selected:
+                                        !_bag && selectedGroup?.id == group.id,
+                                    onSelected: _busy
+                                        ? null
+                                        : (_) => _selectGroup(group.id),
+                                  ),
+                                ),
+                              ChoiceChip(
+                                label: const Text('包裹'),
+                                selected: _bag,
+                                onSelected: _busy
+                                    ? null
+                                    : (_) => setState(() {
+                                        _bag = true;
+                                        _selected = null;
+                                        _bagItem = null;
+                                      }),
+                              ),
+                            ],
                           ),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: _busy ? null : widget.onRecharge,
+                        icon: const Icon(Icons.battery_charging_full, size: 18),
+                        label: Text(
+                          snapshot?.wallet.gold == null
+                              ? '充值'
+                              : liveBatteryAmount(snapshot!.wallet.gold!),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
                         ),
                       ),
                       IconButton(
                         tooltip: '刷新礼物',
                         onPressed: _busy ? null : _load,
-                        icon: const Icon(Icons.refresh),
+                        icon: const Icon(Icons.refresh, size: 20),
+                        visualDensity: VisualDensity.compact,
                       ),
                       IconButton(
                         tooltip: '关闭礼物',
                         onPressed: _busy ? null : () => Navigator.pop(context),
-                        icon: const Icon(Icons.close),
+                        icon: const Icon(Icons.close, size: 20),
+                        visualDensity: VisualDensity.compact,
                       ),
                     ],
                   ),
@@ -283,97 +351,10 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
                       ),
                       if (snapshot != null)
                         Text(
-                          '账号 UID ${snapshot.accountUid} · 电池余额：${snapshot.wallet.gold == null ? '暂不可用' : liveBatteryAmount(snapshot.wallet.gold!)}',
+                          '账号 UID ${snapshot.accountUid}',
+                          style: const TextStyle(fontSize: 12),
                         ),
                       const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          ChoiceChip(
-                            label: const Text('电池礼物'),
-                            selected: !_bag,
-                            onSelected: _busy
-                                ? null
-                                : (_) => setState(() {
-                                    _bag = false;
-                                    _selected = null;
-                                    _bagItem = null;
-                                  }),
-                          ),
-                          ChoiceChip(
-                            label: const Text('背包礼物'),
-                            selected: _bag,
-                            onSelected: _busy
-                                ? null
-                                : (_) => setState(() {
-                                    _bag = true;
-                                    _selected = null;
-                                    _bagItem = null;
-                                  }),
-                          ),
-                          if (!_bag)
-                            PopupMenuButton<bool>(
-                              tooltip: '按电池价格排序',
-                              enabled: !_busy,
-                              initialValue: _priceDescending,
-                              onSelected: (descending) => setState(
-                                () => _priceDescending = descending,
-                              ),
-                              itemBuilder: (_) => const [
-                                PopupMenuItem(
-                                  value: false,
-                                  child: Text('价格从低到高'),
-                                ),
-                                PopupMenuItem(
-                                  value: true,
-                                  child: Text('价格从高到低'),
-                                ),
-                              ],
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 10,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.swap_vert, size: 18),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _priceDescending ? '价格从高到低' : '价格从低到高',
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      if (!_bag && groups.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: [
-                              ChoiceChip(
-                                label: const Text('全部'),
-                                selected: selectedGroup == null,
-                                onSelected: _busy
-                                    ? null
-                                    : (_) => _selectGroup(null),
-                              ),
-                              for (final group in groups)
-                                ChoiceChip(
-                                  label: Text(group.name),
-                                  selected: selectedGroup?.id == group.id,
-                                  onSelected: _busy
-                                      ? null
-                                      : (_) => _selectGroup(group.id),
-                                ),
-                            ],
-                          ),
-                        ),
                       if (_busy && !_confirming)
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 8),
@@ -460,7 +441,10 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
                                   onTap: _busy
                                       ? null
                                       : () {
-                                          if (!available) {
+                                          if (gift.isRedPacket &&
+                                              widget.onRedPacket != null) {
+                                            _openRedPacket();
+                                          } else if (!available) {
                                             setState(
                                               () => _message =
                                                   gift.unavailableReason ??
@@ -505,13 +489,15 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
                                         ),
                                         Text(
                                           bag == null
-                                              ? gift.priceKnown
+                                              ? gift.isRedPacket
+                                                    ? '选择红包套餐'
+                                                    : gift.priceKnown
                                                     ? '${gift.displayPrice} 电池'
                                                     : '价格未知'
                                               : '库存 ${bag.quantity}',
                                           style: const TextStyle(fontSize: 12),
                                         ),
-                                        if (!available)
+                                        if (!available && !gift.isRedPacket)
                                           Text(
                                             '暂不可送',
                                             style: TextStyle(
@@ -596,8 +582,23 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
     );
   }
 
+  Future<void> _openRedPacket() async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _selected = null;
+      _bagItem = null;
+    });
+    try {
+      await widget.onRedPacket?.call();
+    } finally {
+      if (mounted) await _load();
+    }
+  }
+
   void _selectGroup(String? id) {
     setState(() {
+      _bag = false;
       _groupId = id;
       _selected = null;
       _bagItem = null;

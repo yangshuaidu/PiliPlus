@@ -39,7 +39,9 @@ class LiveGiftService {
   static const walletPath = '/xlive/web-room/v1/index/getInfoByUser';
   static const sendGoldPath = '/xlive/revenue/v2/gift/sendGoldMultiUser';
   static const sendBagPath = '/xlive/revenue/v2/gift/sendBagMultiUser';
-  static final Set<int> _sendingAccounts = {};
+
+  /// Shared with native red packets and SC so paid writes cannot overlap per account.
+  static final Set<int> sendingAccounts = {};
   static int _nonce = 0;
 
   final int roomId;
@@ -161,17 +163,17 @@ class LiveGiftService {
     final state = record['state'];
     if (state != 'submitting' && state != 'unknown') return null;
     return LiveGiftResult(
-      _sendingAccounts.contains(account.uid)
+      sendingAccounts.contains(account.uid)
           ? LiveActionState.submitting
           : LiveActionState.unknown,
-      '上次赠送 ${record['gift_name']} × ${record['quantity']} 结果尚未确认。'
-      '请到官方直播间核对送礼记录、背包和余额，不要直接重发。',
+      '上次操作 ${record['gift_name']} × ${record['quantity']} 结果尚未确认。'
+      '请核对官方礼物／红包／SC 记录、背包和余额，不要直接重发。',
       record['operation_id']?.toString() ?? '',
     );
   }
 
   Future<void> _ensureNoPending(LiveGiftAccount account) async {
-    if (_sendingAccounts.contains(account.uid) || await pending() != null) {
+    if (sendingAccounts.contains(account.uid) || await pending() != null) {
       throw const LiveGiftException('已有正在提交或结果待核对的礼物');
     }
     _guard(account);
@@ -183,7 +185,7 @@ class LiveGiftService {
     _guard(account);
     final record = await journal.read(_key(account.uid));
     _guard(account);
-    if (_sendingAccounts.contains(account.uid) ||
+    if (sendingAccounts.contains(account.uid) ||
         record == null ||
         record['operation_id'] != operationId ||
         !{'unknown', 'submitting'}.contains(record['state'])) {
@@ -242,7 +244,10 @@ class LiveGiftService {
     } else {
       gift = snapshot.gifts.where((item) => item.id == giftId).firstOrNull;
     }
-    if (gift == null || !gift.sendable) {
+    if (gift == null ||
+        !gift.sendable ||
+        gift.isRedPacket ||
+        gift.id == 13000) {
       throw LiveGiftException(gift?.unavailableReason ?? '礼物已下架或不可用');
     }
     if (quantity < 1 || quantity > gift.maxQuantity || quantity > 5000) {
@@ -298,7 +303,7 @@ class LiveGiftService {
           fresh.coinType != value.gift.coinType) {
         throw const LiveGiftException('礼物价格已变化，请重新确认');
       }
-      locked = _sendingAccounts.add(account.uid);
+      locked = sendingAccounts.add(account.uid);
       if (!locked) throw const LiveGiftException('正在提交礼物，请等待');
       // Another panel may have completed with an unknown result while the
       // catalogue was being refreshed. Check again under the account lock.
@@ -378,7 +383,7 @@ class LiveGiftService {
       }
       return result;
     } finally {
-      if (locked) _sendingAccounts.remove(account.uid);
+      if (locked) sendingAccounts.remove(account.uid);
     }
   }
 

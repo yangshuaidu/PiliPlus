@@ -2,11 +2,15 @@ class BaseEmote {
   late String url;
   late String emoticonUnique;
   late double width;
+  late bool inPlayerArea;
   late double height;
   late final isOfficial = emoticonUnique.startsWith('official_');
 
   BaseEmote.fromJson(Map<String, dynamic> json) {
     url = json['url'];
+    if (url.startsWith('//')) url = 'https:$url';
+    inPlayerArea =
+        json['in_player_area'] == 1 || json['in_player_area'] == true;
     emoticonUnique = json['emoticon_unique'];
     width = (json['width'] as num).toDouble();
     height = (json['height'] as num?)?.toDouble() ?? width;

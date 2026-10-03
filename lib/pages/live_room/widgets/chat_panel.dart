@@ -7,6 +7,11 @@ import 'package:PiliPlus/common/widgets/scroll_physics.dart'
     show platformClampingPhysics;
 import 'package:PiliPlus/http/live.dart';
 import 'package:PiliPlus/models_new/live/live_danmaku/danmaku_msg.dart';
+import 'package:PiliPlus/models_new/live/live_danmaku/live_message_parser.dart';
+import 'package:PiliPlus/models_new/live/live_danmaku/live_room_notice.dart';
+import 'package:PiliPlus/pages/live_room/widgets/message_badges.dart';
+import 'package:PiliPlus/utils/accounts.dart';
+import 'package:PiliPlus/pages/live_room/live_message_session.dart';
 import 'package:PiliPlus/models_new/live/live_superchat/item.dart';
 import 'package:PiliPlus/pages/live_room/controller.dart';
 import 'package:PiliPlus/pages/live_room/superchat/superchat_card.dart';
@@ -47,110 +52,298 @@ class LiveRoomChatPanel extends StatelessWidget {
     return Stack(
       children: [
         Obx(
-          () => LiveListView.separated(
-            key: const PageStorageKey(LiveRoomChatPanel),
-            // multiply by 2 to account for separators
-            initialIndex: liveRoomController.trimDmIndex * 2,
-            padding: const .symmetric(horizontal: 12),
-            controller: liveRoomController.scrollController,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemCount: liveRoomController.builtLength =
-                liveRoomController.messages.length,
-            physics: platformClampingPhysics,
-            itemBuilder: (_, index) {
-              liveRoomController.chatSimpleIndex = index;
-              final item = liveRoomController.messages[index];
-              if (item is DanmakuMsg) {
-                WidgetSpan? medal;
-                if (item.medalInfo case final medalInfo?) {
-                  try {
-                    medal = WidgetSpan(
-                      child: Padding(
-                        padding: const .only(right: 4),
-                        child: MedalWidget.fromMedalInfo(
-                          medal: medalInfo,
-                          padding: MedalWidget.mediumPadding,
+          () {
+            liveRoomController.filters.blocked.length;
+            final showBadges = liveRoomController.showMessageBadges.value;
+            return LiveListView.separated(
+              key: const PageStorageKey(LiveRoomChatPanel),
+              // multiply by 2 to account for separators
+              initialIndex: liveRoomController.trimDmIndex * 2,
+              padding: const .symmetric(horizontal: 12),
+              controller: liveRoomController.scrollController,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemCount: liveRoomController.builtLength =
+                  liveRoomController.messages.length,
+              physics: platformClampingPhysics,
+              itemBuilder: (_, index) {
+                liveRoomController.chatSimpleIndex = index;
+                final item = liveRoomController.messages[index];
+                if (!liveRoomController.messageVisible(item))
+                  return const SizedBox.shrink();
+                if (item is LiveRoomNotice) {
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blueGrey.withValues(alpha: .24),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            if (showBadges) ...liveBadgeSpans(item.badges),
+                            if (item.name.isNotEmpty &&
+                                !item.text.contains(item.name))
+                              TextSpan(
+                                text:
+                                    '${item.uid > 0 && item.uid == Accounts.main.mid ? '我' : item.name} ',
+                                style: const TextStyle(
+                                  color: Colors.lightBlueAccent,
+                                ),
+                              ),
+                            TextSpan(
+                              text: item.text,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  } catch (e, s) {
-                    if (kDebugMode) {
-                      Utils.reportError(e, s);
-                    }
-                  }
+                    ),
+                  );
                 }
-                return Align(
-                  alignment: Alignment.centerLeft,
-                  child: Builder(
-                    builder: (itemContext) {
-                      return Container(
-                        padding: const .symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: bg,
-                          borderRadius: const .all(.circular(14)),
-                        ),
-                        child: Text.rich(
-                          TextSpan(
-                            children: [
-                              if (item.extra.mid == liveRoomController.ruid)
-                                const WidgetSpan(
-                                  child: Padding(
-                                    padding: .only(right: 4),
-                                    child: PBadge(
-                                      text: '主播',
-                                      isStack: false,
-                                      type: .line_primary,
-                                    ),
-                                  ),
-                                ),
-                              ?medal,
-                              TextSpan(
-                                text: '${item.name}: ',
-                                style: TextStyle(
-                                  color: nameColor,
-                                  fontSize: 14,
-                                ),
-                                recognizer: item.extra.mid == 0
-                                    ? null
-                                    : (NoDeadlineTapGestureRecognizer()
-                                        ..onTapUp = (e) => _showMsgMenu(
-                                          context,
-                                          itemContext,
-                                          e,
-                                          item,
-                                        )),
+                if (item is LiveGiftMessage) {
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.deepOrange.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            if (showBadges) ...liveBadgeSpans(item.badges),
+                            const WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: Icon(
+                                Icons.card_giftcard,
+                                size: 16,
+                                color: Colors.amber,
                               ),
-                              if (item.reply case final reply?)
-                                TextSpan(
-                                  text: '@${reply.name} ',
-                                  style: TextStyle(
-                                    color: primary,
-                                    fontSize: 14,
-                                  ),
-                                  recognizer: NoDeadlineTapGestureRecognizer()
-                                    ..onTap = () =>
-                                        Get.toNamed('/member?mid=${reply.mid}'),
-                                ),
-                              _buildMsg(devicePixelRatio, item),
-                            ],
+                            ),
+                            TextSpan(
+                              text:
+                                  ' ${item.uid > 0 && item.uid == Accounts.main.mid ? '我 · ${item.name}' : item.name} ',
+                              style: const TextStyle(color: Colors.amber),
+                              recognizer: item.uid <= 0
+                                  ? null
+                                  : (NoDeadlineTapGestureRecognizer()
+                                      ..onTap = () => Get.toNamed(
+                                        '/member?mid=${item.uid}',
+                                      )),
+                            ),
+                            TextSpan(
+                              text:
+                                  '${item.action} ${item.giftName} × ${item.quantity}',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                if (item is DanmakuMsg) {
+                  WidgetSpan? medal;
+                  if (showBadges &&
+                      item.badges.medalName.isEmpty &&
+                      item.medalInfo != null) {
+                    final medalInfo = item.medalInfo!;
+                    try {
+                      medal = WidgetSpan(
+                        child: Padding(
+                          padding: const .only(right: 4),
+                          child: MedalWidget.fromMedalInfo(
+                            medal: medalInfo,
+                            padding: MedalWidget.mediumPadding,
                           ),
                         ),
                       );
-                    },
-                  ),
-                );
-              }
-              if (item is SuperChatItem) {
-                return SuperChatCard(
-                  item: item,
-                  persistentSC: true,
-                  onReport: () => liveRoomController.reportSC(item),
-                );
-              }
-              return null;
-            },
-          ),
+                    } catch (e, s) {
+                      if (kDebugMode) {
+                        Utils.reportError(e, s);
+                      }
+                    }
+                  }
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: Builder(
+                      builder: (itemContext) {
+                        return Container(
+                          padding: const .symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: bg,
+                            borderRadius: const .all(.circular(14)),
+                          ),
+                          child: Text.rich(
+                            TextSpan(
+                              children: [
+                                if (showBadges) ...liveBadgeSpans(item.badges),
+                                if (item.extra.mid == liveRoomController.ruid)
+                                  const WidgetSpan(
+                                    child: Padding(
+                                      padding: .only(right: 4),
+                                      child: PBadge(
+                                        text: '主播',
+                                        isStack: false,
+                                        type: .line_primary,
+                                      ),
+                                    ),
+                                  ),
+                                ?medal,
+                                TextSpan(
+                                  text: '${item.name}: ',
+                                  style: TextStyle(
+                                    color:
+                                        liveNameColor(item.badges.nameColor) ??
+                                        nameColor,
+                                    fontSize: 14,
+                                  ),
+                                  recognizer: item.extra.mid == 0
+                                      ? null
+                                      : (NoDeadlineTapGestureRecognizer()
+                                          ..onTapUp = (e) => _showMsgMenu(
+                                            context,
+                                            itemContext,
+                                            e,
+                                            item,
+                                          )),
+                                ),
+                                if (item.reply case final reply?)
+                                  TextSpan(
+                                    text: '@${reply.name} ',
+                                    style: TextStyle(
+                                      color: primary,
+                                      fontSize: 14,
+                                    ),
+                                    recognizer: (reply.mid ?? 0) <= 0
+                                        ? null
+                                        : (NoDeadlineTapGestureRecognizer()
+                                            ..onTap = () => Get.toNamed(
+                                              '/member?mid=${reply.mid}',
+                                            )),
+                                  ),
+                                _buildMsg(devicePixelRatio, item),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                }
+                if (item is SuperChatItem) {
+                  return SuperChatCard(
+                    item: item,
+                    persistentSC: true,
+                    onReport: () => liveRoomController.reportSC(item),
+                  );
+                }
+                return null;
+              },
+            );
+          },
         ),
+        Obx(() {
+          final state = liveRoomController.messageConnectionState.value;
+          if (state == LiveMessageConnectionState.connected ||
+              state == LiveMessageConnectionState.suspended) {
+            return const SizedBox.shrink();
+          }
+          return Positioned(
+            left: 12,
+            bottom: 42,
+            child: Material(
+              color: Colors.black87,
+              borderRadius: BorderRadius.circular(8),
+              child: TextButton.icon(
+                onPressed: state == LiveMessageConnectionState.stopped
+                    ? liveRoomController.retryLiveMessages
+                    : null,
+                icon: const Icon(Icons.sync, size: 16, color: Colors.amber),
+                label: Text(
+                  state.label,
+                  style: const TextStyle(color: Colors.amber),
+                ),
+              ),
+            ),
+          );
+        }),
+        Obx(() {
+          liveRoomController.deliveryRevision.value;
+          final entries = liveRoomController.deliveryTracker.entries;
+          if (entries.isEmpty) return const SizedBox.shrink();
+          return Positioned(
+            left: 12,
+            right: 12,
+            top: 0,
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                  onTap: () => showDialog<void>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('弹幕发送检测'),
+                      content: SizedBox(
+                        width: 440,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                '回显表示本客户端收到自己的弹幕，不能证明其他观众均可见。未回显也不能单独证明被屏蔽。仅检测本次进入直播间后的发送。',
+                              ),
+                              const SizedBox(height: 12),
+                              for (final entry in entries)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Text('${entry.text}\n${entry.label}'),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('关闭'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    child: Text(
+                      entries.first.label,
+                      maxLines: 2,
+                      style: const TextStyle(color: Colors.amber, fontSize: 11),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
         if (kDebugMode && liveRoomController.showSuperChat) ...[
           Positioned(
             top: 50,

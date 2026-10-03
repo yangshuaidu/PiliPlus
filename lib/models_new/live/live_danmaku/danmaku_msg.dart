@@ -3,6 +3,7 @@ import 'package:PiliPlus/models_new/live/live_danmaku/live_emote.dart';
 import 'package:PiliPlus/models_new/live/live_medal_wall/uinfo_medal.dart';
 import 'package:PiliPlus/pages/danmaku/danmaku_model.dart';
 import 'package:PiliPlus/utils/global_data.dart';
+import 'package:PiliPlus/models_new/live/live_danmaku/live_user_badges.dart';
 
 class DanmakuMsg {
   final String name;
@@ -12,6 +13,8 @@ class DanmakuMsg {
   final Owner? reply;
   final LiveDanmaku extra;
   final UinfoMedal? medalInfo;
+  final LiveUserBadges badges;
+  final bool lottery;
 
   const DanmakuMsg({
     required this.name,
@@ -21,10 +24,16 @@ class DanmakuMsg {
     this.reply,
     required this.extra,
     this.medalInfo,
+    this.badges = const LiveUserBadges(),
+    this.lottery = false,
   });
 
   factory DanmakuMsg.fromPrefetch(Map<String, dynamic> obj) {
     final user = obj['user'];
+    final badges = LiveUserBadges.parse(
+      Map<String, dynamic>.from(user),
+      data: obj,
+    );
     BaseEmote? uemote;
     if ((obj['emoticon']?['emoticon_unique'] as String?)?.isNotEmpty == true) {
       uemote = BaseEmote.fromJson(obj['emoticon']);
@@ -41,7 +50,7 @@ class DanmakuMsg {
       }
     }
     return DanmakuMsg(
-      name: user['base']['name'],
+      name: badges.anonymous ? '匿名观众' : user['base']['name'],
       text: obj['text'],
       emots: (obj['emots'] as Map<String, dynamic>?)?.map(
         (k, v) => MapEntry(k, BaseEmote.fromJson(v)),
@@ -50,14 +59,15 @@ class DanmakuMsg {
       reply: reply,
       extra: LiveDanmaku(
         id: obj['id_str'],
-        mid: user['uid'],
+        mid: badges.anonymous ? 0 : user['uid'],
         dmType: obj['dm_type'],
         ts: checkInfo['ts'],
         ct: checkInfo['ct'],
       ),
-      medalInfo: GlobalData().showMedal
+      medalInfo: !badges.anonymous && GlobalData().showMedal
           ? UinfoMedal.lightMedal(user['medal'])
           : null,
+      badges: badges,
     );
   }
 

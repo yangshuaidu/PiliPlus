@@ -87,6 +87,13 @@ class _ContributionRankPanelState extends State<ContributionRankPanel>
                 .toList(),
           ),
         ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 6, 16, 8),
+          child: Text(
+            '人数与榜单口径可能不同。仅展示接口返回的观众；匿名标记保留，不据人数差推断隐身身份。',
+            style: TextStyle(fontSize: 11),
+          ),
+        ),
       ],
     );
   }
@@ -130,19 +137,40 @@ class _ContributionRankTypeState extends State<_ContributionRankType>
     final showScore = widget.type == .online_rank;
     return Material(
       type: .transparency,
-      child: refreshIndicator(
-        onRefresh: _controller.onRefresh,
-        child: CustomScrollView(
-          controller: _controller.scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            ViewSliverSafeArea(
-              sliver: Obx(
-                () => _buildBody(showScore, _controller.loadingState.value),
+      child: Column(
+        children: [
+          Expanded(
+            child: refreshIndicator(
+              onRefresh: _controller.onRefresh,
+              child: CustomScrollView(
+                controller: _controller.scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  ViewSliverSafeArea(
+                    sliver: Obx(
+                      () =>
+                          _buildBody(showScore, _controller.loadingState.value),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+          Obx(() {
+            final own = _controller.own.value;
+            if (own == null) return const SizedBox.shrink();
+            return ListTile(
+              leading: NetworkImgLayer(
+                src: own.face,
+                width: 32,
+                height: 32,
+                type: .avatar,
+              ),
+              title: Text('我 · ${own.name ?? '观众'}'),
+              trailing: Text('贡献 ${own.score ?? '—'}'),
+            );
+          }),
+        ],
       ),
     );
   }
@@ -193,7 +221,7 @@ class _Item extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     late final colorScheme = ColorScheme.of(context);
-    Widget child = Text(item.name!);
+    Widget child = Text(item.name ?? '观众');
     if (item.uinfoMedal case final uinfoMedal?) {
       try {
         child = Column(
@@ -214,7 +242,9 @@ class _Item extends StatelessWidget {
       }
     }
     return InkWell(
-      onTap: () => Get.toNamed('/member?mid=${item.uid}'),
+      onTap: item.anonymous || item.uid == null || item.uid! <= 0
+          ? null
+          : () => Get.toNamed('/member?mid=${item.uid}'),
       child: Padding(
         padding: const .only(left: 10, top: 9, bottom: 8, right: 16),
         child: Row(

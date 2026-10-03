@@ -1,9 +1,12 @@
+import 'package:PiliPlus/models_new/live/live_danmaku_style.dart';
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/http/api.dart';
+import 'package:PiliPlus/http/constants.dart';
 import 'package:PiliPlus/http/browser_ua.dart';
 import 'package:PiliPlus/http/init.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/login.dart';
+import 'package:PiliPlus/http/retry_interceptor.dart';
 import 'package:PiliPlus/models/common/account_type.dart';
 import 'package:PiliPlus/models/common/live/live_contribution_rank_type.dart';
 import 'package:PiliPlus/models/common/live/live_search_type.dart';
@@ -34,23 +37,169 @@ import 'package:dio/dio.dart';
 abstract final class LiveHttp {
   static Account get recommend => Accounts.get(AccountType.recommend);
 
-  static Future<LoadingState<void>> sendLiveMsg({
+  static Future<Map<String, dynamic>> liveGiftMaterials(
+    int roomId,
+    int anchorUid,
+  ) async {
+    final response = await Request().get(
+      '${HttpString.liveBaseUrl}/xlive/web-room/v1/giftPanel/roomGiftList',
+      queryParameters: {
+        'room_id': roomId,
+        'ruid': anchorUid,
+        'platform': 'pc',
+        'source': 'live',
+        'build': 0,
+      },
+    );
+    final data = response.data;
+    return data['code'] == 0 && data['data'] is Map
+        ? Map<String, dynamic>.from(data['data'])
+        : {};
+  }
+
+  static Future<LoadingState<Map<String, dynamic>>> liveActivityInfo(
+    int roomId, {
+    bool anchor = false,
+  }) async {
+    final response = await Request().get(
+      '${HttpString.liveBaseUrl}/xlive/lottery-interface/v1/${anchor ? 'Anchor/Check' : 'lottery/getLotteryInfoWeb'}',
+      queryParameters: {'roomid': roomId, if (!anchor) 'need_guard': true},
+    );
+    final data = response.data;
+    return data['code'] == 0
+        ? Success(
+            data['data'] is Map
+                ? Map<String, dynamic>.from(data['data'])
+                : <String, dynamic>{},
+          )
+        : Error('${data['message'] ?? data['msg'] ?? '活动信息不可用'}');
+  }
+
+  static Future<LoadingState<Map<String, dynamic>>> liveRoomWebInfo(
+    int roomId,
+  ) async {
+    final response = await Request().get(
+      '${HttpString.liveBaseUrl}/xlive/web-room/v1/index/getInfoByRoom',
+      queryParameters: await WbiSign.makSign({
+        'room_id': roomId,
+        'web_location': 444.8,
+      }),
+    );
+    final data = response.data;
+    return data['code'] == 0 && data['data'] is Map
+        ? Success(Map<String, dynamic>.from(data['data']))
+        : Error('${data['message'] ?? '直播间扩展信息不可用'}');
+  }
+
+  static Future<LoadingState<Map<String, dynamic>>> livePkInfo(
+    int roomId,
+    int pkId, {
+    bool legacy = false,
+    int? pkVersion,
+  }) async {
+    final response = await Request().get(
+      '${HttpString.liveBaseUrl}${legacy ? '/xlive/general-interface/v1/battle/getInfoById' : '/xlive/general-interface/v2/pk/info'}',
+      queryParameters: {
+        'room_id': roomId,
+        'pk_id': pkId,
+        if (legacy && pkVersion != null)
+          'pk_version': pkVersion == 3 ? 6 : pkVersion,
+      },
+    );
+    final data = response.data;
+    return data['code'] == 0 && data['data'] is Map
+        ? Success(Map<String, dynamic>.from(data['data']))
+        : Error('${data['message'] ?? 'PK 信息不可用'}');
+  }
+
+  static Future<LoadingState<Map<String, dynamic>>> liveGuardRank({
+    required int roomId,
+    required int ruid,
+    required int page,
+    required int type,
+  }) async {
+    final response = await Request().get(
+      '${HttpString.liveBaseUrl}/xlive/app-room/v2/guardTab/topListNew',
+      queryParameters: {
+        'roomid': roomId,
+        'ruid': ruid,
+        'page': page,
+        'page_size': 20,
+        'typ': type,
+        'platform': 'web',
+      },
+    );
+    final data = response.data;
+    if (data['code'] == 0 && data['data'] is Map) {
+      return Success(Map<String, dynamic>.from(data['data']));
+    }
+    return Error('${data['message'] ?? data['msg'] ?? '大航海榜单不可用'}');
+  }
+
+  static Future<LiveDanmakuStyleConfig> liveDanmakuStyles(Object roomId) async {
+    final account = Accounts.main;
+    final response = await Request().get(
+      '${HttpString.liveBaseUrl}/xlive/web-room/v1/dM/GetDMConfigByGroup',
+      queryParameters: {'room_id': roomId},
+      options: Options(extra: {'account': account}),
+    );
+    if (!identical(account, Accounts.main)) throw StateError('账号已变化，请重新打开样式面板');
+    final data = response.data;
+    if (data is! Map || data['code'] != 0 || data['data'] is! Map)
+      throw StateError(
+        '${data is Map ? data['message'] ?? '样式权限读取失败' : '样式权限读取失败'}',
+      );
+    return LiveDanmakuStyleConfig.parse(
+      Map<String, dynamic>.from(data['data']),
+    );
+  }
+
+  static Future<LoadingState<Map<String, dynamic>>> sendLiveMsg({
     required Object roomId,
     required Object msg,
     Object? dmType,
     Object? emoticonOptions,
     int replyMid = 0,
     String replayDmid = '',
+    int mode = 1,
+    int color = 0xffffff,
   }) async {
-    String csrf = Accounts.main.csrf;
-    final res = await Request().post(
+    final account = Accounts.main;
+    final csrf = account.csrf;
+    if (mode != 1 || color != 0xffffff) {
+      try {
+        final styles = await liveDanmakuStyles(roomId);
+        if (!styles.permits(mode, color))
+          return const Error('所选弹幕样式权限已变化，请重新选择');
+      } catch (_) {
+        return const Error('未能核验弹幕样式权限，本次未发送，请稍后重试');
+      }
+    }
+    final signature = await WbiSign.makSign({'web_location': 444.8});
+    if (!account.isLogin || !identical(account, Accounts.main)) {
+      return const Error('账号已变化，请重新发送');
+    }
+    // A lost reply does not authorize retransmitting the same chat message.
+    // The clone shares the main adapter and must not close it.
+    final client = Request.dio.clone()
+      ..interceptors.removeWhere(
+        (i) => i is RetryInterceptor || i is LogInterceptor,
+      );
+    final res = await client.post(
       Api.sendLiveMsg,
-      queryParameters: await WbiSign.makSign({'web_location': 444.8}),
+      queryParameters: signature,
+      options: Options(
+        extra: {'account': account},
+        followRedirects: false,
+        maxRedirects: 0,
+        sendTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 15),
+      ),
       data: FormData.fromMap({
         'bubble': 0,
         'msg': msg,
-        'color': 16777215,
-        'mode': 1,
+        'color': color,
+        'mode': mode,
         'dm_type': ?dmType,
         if (emoticonOptions != null)
           'emoticonOptions': emoticonOptions
@@ -72,7 +221,8 @@ abstract final class LiveHttp {
       }),
     );
     if (res.data['code'] == 0) {
-      return const Success(null);
+      final data = res.data['data'];
+      return Success(data is Map ? Map<String, dynamic>.from(data) : {});
     } else {
       return Error(res.data['message']);
     }
@@ -531,7 +681,8 @@ abstract final class LiveHttp {
   static Future<LoadingState<void>> addShieldKeyword({
     required String keyword,
   }) async {
-    final csrf = Accounts.main.csrf;
+    final account = Accounts.main;
+    final csrf = account.csrf;
     final res = await Request().post(
       Api.addShieldKeyword,
       data: {
@@ -539,7 +690,10 @@ abstract final class LiveHttp {
         'csrf': csrf,
         'csrf_token': csrf,
       },
-      options: Options(contentType: Headers.formUrlEncodedContentType),
+      options: Options(
+        extra: {'account': account},
+        contentType: Headers.formUrlEncodedContentType,
+      ),
     );
     if (res.data['code'] == 0) {
       return const Success(null);
@@ -551,7 +705,8 @@ abstract final class LiveHttp {
   static Future<LoadingState<void>> delShieldKeyword({
     required String keyword,
   }) async {
-    final csrf = Accounts.main.csrf;
+    final account = Accounts.main;
+    final csrf = account.csrf;
     final res = await Request().post(
       Api.delShieldKeyword,
       data: {
@@ -559,7 +714,10 @@ abstract final class LiveHttp {
         'csrf': csrf,
         'csrf_token': csrf,
       },
-      options: Options(contentType: Headers.formUrlEncodedContentType),
+      options: Options(
+        extra: {'account': account},
+        contentType: Headers.formUrlEncodedContentType,
+      ),
     );
     if (res.data['code'] == 0) {
       return const Success(null);
@@ -573,7 +731,8 @@ abstract final class LiveHttp {
     required Object roomid,
     required int type,
   }) async {
-    final csrf = Accounts.main.csrf;
+    final account = Accounts.main;
+    final csrf = account.csrf;
     final res = await Request().post(
       Api.liveShieldUser,
       data: {
@@ -583,7 +742,10 @@ abstract final class LiveHttp {
         'csrf': csrf,
         'csrf_token': csrf,
       },
-      options: Options(contentType: Headers.formUrlEncodedContentType),
+      options: Options(
+        extra: {'account': account},
+        contentType: Headers.formUrlEncodedContentType,
+      ),
     );
     if (res.data['code'] == 0) {
       return Success(ShieldUserList.fromJson(res.data['data']));

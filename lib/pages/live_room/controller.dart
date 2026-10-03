@@ -1,5 +1,16 @@
+import 'package:PiliPlus/pages/live_room/widgets/superchat_purchase_panel.dart';
+import 'package:PiliPlus/pages/live_room/live_message_filters.dart';
+import 'package:PiliPlus/models_new/live/live_danmaku/live_user_badges.dart';
+import 'package:PiliPlus/models_new/live/live_danmaku/live_message_parser.dart';
+import 'package:PiliPlus/pages/live_room/live_message_session.dart';
+import 'package:PiliPlus/pages/live_room/live_danmaku_delivery.dart';
+import 'package:PiliPlus/pages/live_room/live_room_features.dart';
+import 'package:PiliPlus/pages/live_room/live_gift_effects.dart';
+import 'package:PiliPlus/models_new/live/live_danmaku/live_room_notice.dart';
+import 'package:PiliPlus/models_new/live/live_contribution_rank/item.dart';
+import 'package:PiliPlus/models/common/live/live_contribution_rank_type.dart';
+
 import 'dart:async' show Timer, StreamSubscription;
-import 'dart:convert' show jsonDecode;
 import 'dart:io' show Platform;
 import 'dart:math' as math;
 
@@ -10,11 +21,8 @@ import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/video.dart';
 import 'package:PiliPlus/models/common/super_chat_type.dart';
 import 'package:PiliPlus/models/common/video/live_quality.dart';
-import 'package:PiliPlus/models/model_owner.dart';
 import 'package:PiliPlus/models_new/live/live_danmaku/danmaku_msg.dart';
-import 'package:PiliPlus/models_new/live/live_danmaku/live_emote.dart';
 import 'package:PiliPlus/models_new/live/live_dm_info/data.dart';
-import 'package:PiliPlus/models_new/live/live_medal_wall/uinfo_medal.dart';
 import 'package:PiliPlus/models_new/live/live_room_info_h5/data.dart';
 import 'package:PiliPlus/models_new/live/live_room_play_info/codec.dart';
 import 'package:PiliPlus/models_new/live/live_room_play_info/stream.dart';
@@ -117,6 +125,103 @@ class LiveRoomController extends GetxController {
   final disableAutoScroll = false.obs;
   bool autoScroll = true;
   LiveMessageStream? _msgStream;
+  final messageConnectionState = LiveMessageConnectionState.suspended.obs;
+  final deliveryRevision = 0.obs;
+  late final roomFeatures = LiveRoomFeatures(roomId);
+  late final giftEffects = LiveGiftEffects(
+    loadCatalog: () => LiveHttp.liveGiftMaterials(roomId, ruid ?? 0),
+  );
+  final filters = LiveMessageFilters();
+  final cornerEmoteUrl = Rxn<String>();
+  Timer? _cornerEmoteTimer;
+  void updateMessageFilter(LiveMessageFilter filter, bool value) {
+    filters.set(filter, value);
+    if (value &&
+        (filter == LiveMessageFilter.gifts ||
+            filter == LiveMessageFilter.giftEffects)) {
+      giftEffects.clear();
+    }
+    if (value &&
+        (filter == LiveMessageFilter.cornerEmotes ||
+            filter == LiveMessageFilter.emotes)) {
+      _cornerEmoteTimer?.cancel();
+      cornerEmoteUrl.value = null;
+    }
+    if (value && filter == LiveMessageFilter.superChat) {
+      superChatMsg.clear();
+      fsSC.value = null;
+    }
+    messages.refresh();
+  }
+
+  bool messageVisible(dynamic message) {
+    if (message is DanmakuMsg && isBlocked(message.text, message.extra.mid)) {
+      return false;
+    }
+    if (message is LiveGiftMessage &&
+        isBlocked(message.giftName, message.uid)) {
+      return false;
+    }
+    if (message is LiveRoomNotice && isBlocked(message.text, message.uid)) {
+      return false;
+    }
+    if (message is SuperChatItem && isBlocked(message.message, message.uid)) {
+      return false;
+    }
+    if (message is LiveGiftMessage) {
+      return !filters.hides(LiveMessageFilter.gifts);
+    }
+    if (message is SuperChatItem) {
+      return !filters.hides(LiveMessageFilter.superChat);
+    }
+    if (message is LiveRoomNotice) {
+      return !(message.entry && filters.hides(LiveMessageFilter.entry)) &&
+          !(message.broadcast && filters.hides(LiveMessageFilter.gifts)) &&
+          !(message.lottery && filters.hides(LiveMessageFilter.lottery));
+    }
+    if (message is DanmakuMsg) {
+      if (filters.hides(LiveMessageFilter.emotes) &&
+          (message.uemote != null || message.emots?.isNotEmpty == true)) {
+        return false;
+      }
+      if (filters.hides(LiveMessageFilter.lottery) &&
+          (message.lottery ||
+              roomFeatures.activities.any(
+                (a) => a.danmaku.isNotEmpty && a.danmaku == message.text,
+              ))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  final showRoomNotices = true.obs;
+  final showGiftMessages = true.obs;
+  final showMessageBadges = true.obs;
+  final Set<String> _receivedNoticeIds = {};
+  late final deliveryTracker = LiveDanmakuDeliveryTracker(
+    onChanged: () {
+      if (!_closed) deliveryRevision.value++;
+    },
+  );
+  bool _closed = false;
+  int? _messageRoom;
+  Object? _messageAccount;
+  final Set<String> _receivedGiftIds = {};
+  late final _messageSession = LiveMessageSession(
+    connect: _connectMessages,
+    disconnect: _releaseMessageStream,
+    onState: (state) {
+      if (!_closed) messageConnectionState.value = state;
+      if (state != LiveMessageConnectionState.connected) {
+        deliveryTracker.connectionInterrupted();
+        roomFeatures.stop();
+        giftEffects.clear();
+      } else {
+        roomFeatures.start();
+      }
+    },
+  );
 
   List<String> _keywordList = const [];
   Set<int> _shieldUids = const {};
@@ -145,6 +250,43 @@ class LiveRoomController extends GetxController {
   final RxString title = ''.obs;
 
   final RxnString onlineCount = RxnString();
+  final topViewers = <LiveContributionRankItem>[].obs;
+  DateTime? _lastViewerRefresh;
+  bool _viewersLoading = false;
+
+  Future<void> refreshTopViewers() async {
+    final anchor = ruid ?? roomInfoH5.value?.roomInfo?.uid;
+    if (_closed ||
+        anchor == null ||
+        _viewersLoading ||
+        (_lastViewerRefresh != null &&
+            DateTime.now().difference(_lastViewerRefresh!) <
+                const Duration(seconds: 30))) {
+      return;
+    }
+    _viewersLoading = true;
+    _lastViewerRefresh = DateTime.now();
+    final room = roomId;
+    try {
+      final result = await LiveHttp.liveContributionRank(
+        ruid: anchor,
+        roomId: room,
+        page: 1,
+        type: LiveContributionRankType.online_rank,
+      );
+      if (_closed || room != roomId) return;
+      if (result case Success(:final response)) {
+        topViewers.assignAll((response.item ?? []).take(3));
+        if (response.countText?.isNotEmpty == true) {
+          onlineCount.value = response.countText;
+        } else if (response.count != null)
+          onlineCount.value = NumUtils.numFormat(response.count);
+      }
+    } catch (_) {
+    } finally {
+      _viewersLoading = false;
+    }
+  }
 
   final RxnString watchedShow = RxnString();
   Widget get watchedWidget => Obx(() {
@@ -199,6 +341,7 @@ class LiveRoomController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    filters.load();
     scrollController = ScrollController()..addListener(listener);
     final account = Accounts.main;
     isLogin = account.isLogin;
@@ -264,7 +407,7 @@ class LiveRoomController extends GetxController {
           codecIndex: codecIndex,
           liveUrlIndex: liveUrlIndex,
         ),
-        if (!isLoaded.value && Accounts.heartbeat.isLogin) _fetchBlockRules(),
+        if (!isLoaded.value && Accounts.main.isLogin) _fetchBlockRules(),
       ]);
       isLoaded.value = true;
     } else {
@@ -340,6 +483,7 @@ class LiveRoomController extends GetxController {
     final res = await LiveHttp.liveRoomInfoH5(roomId: roomId);
     if (res case Success(:final response)) {
       roomInfoH5.value = response;
+      refreshTopViewers();
       title.value = response.roomInfo?.title ?? '';
       watchedShow.value = response.watchedShow?.textLarge;
       videoPlayerServiceHandler?.onVideoDetailChange(response, roomId, heroTag);
@@ -412,17 +556,35 @@ class LiveRoomController extends GetxController {
   }
 
   void closeLiveMsg() {
+    _messageSession.stop();
+    dmInfo = null;
+  }
+
+  void _releaseMessageStream() {
     _msgStream?.close();
     _msgStream = null;
   }
 
+  bool _messageMatches(int generation, int room, Object account) =>
+      !_closed &&
+      _messageSession.isCurrent(generation) &&
+      roomId == room &&
+      identical(account, Accounts.heartbeat);
+
   @pragma('vm:notify-debugger-on-exception')
   Future<void> prefetch() async {
-    final res = await LiveHttp.liveRoomDmPrefetch(roomId: roomId);
+    final room = roomId;
+    final account = Accounts.heartbeat;
+    final generation = _messageSession.generation;
+    final res = await LiveHttp.liveRoomDmPrefetch(roomId: room);
+    if (!_messageMatches(generation, room, account)) return;
     if (res case Success(:final response)) {
       if (response != null && response.isNotEmpty) {
         messages.addAll(
-          response.where((item) => !isBlocked(item.text, item.extra.mid)),
+          response.where(
+            (item) =>
+                messageVisible(item) && !isBlocked(item.text, item.extra.mid),
+          ),
         );
         scrollToBottom();
       }
@@ -434,9 +596,15 @@ class LiveRoomController extends GetxController {
   }
 
   Future<void> getSuperChatMsg() async {
-    final res = await LiveHttp.superChatMsg(roomId);
+    final room = roomId;
+    final account = Accounts.heartbeat;
+    final generation = _messageSession.generation;
+    final res = await LiveHttp.superChatMsg(room);
+    if (!_messageMatches(generation, room, account)) return;
     if (res.dataOrNull?.list case final list? when list.isNotEmpty) {
-      superChatMsg.addAll(list);
+      if (!filters.hides(LiveMessageFilter.superChat)) {
+        superChatMsg.addAll(list);
+      }
     }
   }
 
@@ -445,7 +613,10 @@ class LiveRoomController extends GetxController {
   }
 
   Future<void> _fetchBlockRules() async {
+    final account = Accounts.main;
+    final room = roomId;
     final res = await LiveHttp.getLiveInfoByUser(roomId);
+    if (_closed || room != roomId || !identical(account, Accounts.main)) return;
     if (res case Success(:final response?)) {
       if (response.keywordList case final keywordList?) {
         _keywordList = keywordList;
@@ -457,8 +628,9 @@ class LiveRoomController extends GetxController {
   }
 
   void updateBlockRules(List<String> keywords, Set<int> uids) {
-    _keywordList = keywords;
-    _shieldUids = uids;
+    _keywordList = List<String>.from(keywords);
+    _shieldUids = Set<int>.from(uids);
+    messages.refresh();
   }
 
   bool isBlocked(String text, Object uid) {
@@ -466,24 +638,47 @@ class LiveRoomController extends GetxController {
   }
 
   void startLiveMsg() {
+    if (_closed) return;
+    final account = Accounts.heartbeat;
+    if (messageConnectionState.value == LiveMessageConnectionState.stopped &&
+        _messageRoom == roomId &&
+        identical(_messageAccount, account)) {
+      return;
+    }
+    if (_messageSession.running &&
+        _messageRoom == roomId &&
+        identical(_messageAccount, account)) {
+      return;
+    }
+    _messageRoom = roomId;
+    if (!identical(_messageAccount, account)) {
+      deliveryTracker.clear();
+      deliveryRevision.value++;
+    }
+    _messageAccount = account;
+    _messageSession.start(restart: true);
     if (messages.isEmpty) {
       prefetch();
-      if (showSuperChat) {
-        getSuperChatMsg();
-      }
+      if (showSuperChat) getSuperChatMsg();
     }
-    if (_msgStream != null) {
-      return;
+  }
+
+  void retryLiveMessages() {
+    if (_closed || !plPlayerController.playerStatus.isPlaying) return;
+    _messageSession.stop();
+    startLiveMsg();
+  }
+
+  Future<bool> _connectMessages(int generation) async {
+    final room = roomId;
+    final account = Accounts.heartbeat;
+    final res = await LiveHttp.liveRoomGetDanmakuToken(roomId: room);
+    if (!_messageMatches(generation, room, account)) return false;
+    if (res case Success(:final response)) {
+      dmInfo = response;
+      return initDm(response, generation: generation, account: account);
     }
-    if (dmInfo != null) {
-      initDm(dmInfo!);
-      return;
-    }
-    LiveHttp.liveRoomGetDanmakuToken(roomId: roomId).then((res) {
-      if (res case Success(:final response)) {
-        initDm(dmInfo = response);
-      }
-    });
+    return false;
   }
 
   void listener() {
@@ -509,8 +704,14 @@ class LiveRoomController extends GetxController {
 
   @override
   void onClose() {
+    _cornerEmoteTimer?.cancel();
+    _closed = true;
+    deliveryTracker.dispose();
+    roomFeatures.dispose();
+    giftEffects.dispose();
+    _messageSession.dispose();
+    _receivedGiftIds.clear();
     _stopSizeSub();
-    closeLiveMsg();
     cancelLikeTimer();
     cancelLiveTimer();
     savedDanmaku?.clear();
@@ -539,21 +740,29 @@ class LiveRoomController extends GetxController {
     return queryLiveUrl();
   }
 
-  void initDm(LiveDmInfoData info) {
+  Future<bool> initDm(
+    LiveDmInfoData info, {
+    required int generation,
+    required Object account,
+  }) {
+    final room = roomId;
     if (info.hostList.isEmpty) {
-      return;
+      return Future.value(false);
     }
-    _msgStream =
-        LiveMessageStream(
-            streamToken: info.token,
-            roomId: roomId,
-            uid: Accounts.heartbeat.mid,
-            servers: info.hostList
-                .map((host) => 'wss://${host.host}:${host.wssPort}/sub')
-                .toList(),
-          )
-          ..addEventListener(_danmakuListener)
-          ..init();
+    final stream = LiveMessageStream(
+      streamToken: info.token,
+      roomId: room,
+      uid: Accounts.heartbeat.mid,
+      servers: info.hostList
+          .map((host) => 'wss://${host.host}:${host.wssPort}/sub')
+          .toList(),
+      onDisconnected: () => _messageSession.connectionLost(generation),
+    );
+    _msgStream = stream;
+    stream.addEventListener((event) {
+      if (_messageMatches(generation, room, account)) _danmakuListener(event);
+    });
+    return stream.init();
   }
 
   void addDm(dynamic msg, [DanmakuContentItem<DanmakuExtra>? item]) {
@@ -576,69 +785,90 @@ class LiveRoomController extends GetxController {
   @pragma('vm:notify-debugger-on-exception')
   void _danmakuListener(dynamic obj) {
     try {
+      roomFeatures.onEvent(obj);
+      final notice = LiveRoomNotice.parse(obj, roomId);
+      if (notice != null &&
+          messageVisible(notice) &&
+          showRoomNotices.value &&
+          !isBlocked(notice.text, notice.uid)) {
+        if (notice.id.isEmpty || _receivedNoticeIds.add(notice.id)) {
+          addDm(notice);
+        }
+        if (_receivedNoticeIds.length > 500) {
+          _receivedNoticeIds.remove(_receivedNoticeIds.first);
+        }
+      }
       // logger.i(' 原始弹幕消息 ======> ${jsonEncode(obj)}');
-      switch (obj['cmd']) {
+      switch ('${obj['cmd']}'.split(':').first) {
         case 'DANMU_MSG':
-          final info = obj['info'];
-          final first = info[0];
-          final content = first[15];
-          final user = content['user'];
-          // final midHash = first[7];
-          final uid = user['uid'] as int;
-          final msg = info[1];
-          if (isBlocked(msg, uid)) {
+          final parsed = LiveMessageParser.danmaku(
+            obj,
+            showMedal: GlobalData().showMedal,
+          );
+          if (parsed != null) {
+            deliveryTracker.observe(
+              uid: parsed.message.extra.mid,
+              text: parsed.message.text,
+              id: parsed.message.extra.id.toString(),
+              timestamp: int.tryParse(parsed.message.extra.ts.toString()),
+            );
+          }
+          if (parsed == null ||
+              !messageVisible(parsed.message) ||
+              isBlocked(parsed.message.text, parsed.message.extra.mid)) {
             return;
           }
-          final Map<String, dynamic> extra = jsonDecode(content['extra']);
-          final name = user['base']['name'];
-          BaseEmote? uemote;
-          if (first[13] case Map<String, dynamic> map) {
-            uemote = BaseEmote.fromJson(map);
-          }
-          final checkInfo = info[9];
-          final liveExtra = LiveDanmaku(
-            id: extra['id_str'],
-            mid: uid,
-            dmType: extra['dm_type'],
-            ts: checkInfo['ts'],
-            ct: checkInfo['ct'],
-          );
-          Owner? reply;
-          final replyMid = extra['reply_mid'];
-          if (replyMid != null && replyMid != 0) {
-            reply = Owner(
-              mid: replyMid,
-              name: extra['reply_uname'],
+          final emoteUrl = liveAssetUrl(parsed.message.uemote?.url);
+          if (parsed.message.uemote?.inPlayerArea == true &&
+              emoteUrl.isNotEmpty &&
+              !filters.hides(LiveMessageFilter.cornerEmotes)) {
+            _cornerEmoteTimer?.cancel();
+            cornerEmoteUrl.value = emoteUrl;
+            _cornerEmoteTimer = Timer(
+              const Duration(seconds: 3),
+              () => cornerEmoteUrl.value = null,
             );
           }
           addDm(
-            DanmakuMsg(
-              name: name,
-              text: msg,
-              emots: (extra['emots'] as Map<String, dynamic>?)?.map(
-                (k, v) => MapEntry(k, BaseEmote.fromJson(v)),
-              ),
-              uemote: uemote,
-              extra: liveExtra,
-              reply: reply,
-              medalInfo: GlobalData().showMedal
-                  ? UinfoMedal.lightMedal(user['medal'])
-                  : null,
-            ),
+            parsed.message,
             DanmakuContentItem(
-              msg,
+              parsed.message.text,
               color: DanmakuOptions.blockColorful
                   ? Colors.white
-                  : DmUtils.decimalToColor(extra['color']),
-              type: DmUtils.getPosition(extra['mode']),
-              // extra['send_from_me'] is invalid
-              selfSend: isLogin && uid == mid,
-              extra: liveExtra,
+                  : DmUtils.decimalToColor(parsed.color),
+              type: DmUtils.getPosition(parsed.mode),
+              selfSend: isLogin && parsed.message.extra.mid == mid,
+              extra: parsed.message.extra,
             ),
           );
           break;
-        case 'SUPER_CHAT_MESSAGE' when showSuperChat:
+        case 'SEND_GIFT':
+        case 'SEND_GIFT_V2':
+        case 'GUARD_BUY':
+          for (final gift in LiveGiftMessage.parseAll(obj)) {
+            if (filters.hides(LiveMessageFilter.gifts) ||
+                isBlocked(gift.giftName, gift.uid)) {
+              continue;
+            }
+            if (gift.id.isNotEmpty) {
+              if (!_receivedGiftIds.add(gift.id)) continue;
+              if (_receivedGiftIds.length > 1000) {
+                _receivedGiftIds.remove(_receivedGiftIds.first);
+              }
+            }
+            if (showGiftMessages.value) addDm(gift);
+            if (!filters.hides(LiveMessageFilter.giftEffects)) {
+              giftEffects.add(gift);
+            }
+          }
+          break;
+        case 'SUPER_CHAT_MESSAGE'
+            when showSuperChat && !filters.hides(LiveMessageFilter.superChat):
           final item = SuperChatItem.fromJson(obj['data'], roomId);
+          if (!messageVisible(item) ||
+              superChatMsg.any((old) => old.id == item.id)) {
+            return;
+          }
           superChatMsg.insert(0, item);
           addDm(item);
           if (Platform.isAndroid && AndroidHelper.isPipMode) return;
@@ -652,32 +882,23 @@ class LiveRoomController extends GetxController {
             );
           }
           break;
-        // case 'SUPER_CHAT_MESSAGE_DELETE' when showSuperChat:
-        //   if (obj['roomid'] == roomId) {
-        //     final ids = obj['data']?['ids'] as List?;
-        //     if (ids != null && ids.isNotEmpty) {
-        //       if (superChatType == .valid) {
-        //         superChatMsg.removeWhere((e) => ids.contains(e.id));
-        //       } else {
-        //         bool? refresh;
-        //         for (final id in ids) {
-        //           if (superChatMsg.firstWhereOrNull((e) => e.id == id)
-        //               case final item?) {
-        //             item.deleted = true;
-        //             refresh ??= true;
-        //           }
-        //         }
-        //         if (refresh ?? false) {
-        //           superChatMsg.refresh();
-        //         }
-        //       }
-        //     }
-        //   }
+        case 'SUPER_CHAT_MESSAGE_DELETE':
+          final ids = LiveMessageParser.map(obj['data'])['ids'];
+          if (ids is List) {
+            final deleted = ids.map((id) => '$id').toSet();
+            superChatMsg.removeWhere((item) => deleted.contains('${item.id}'));
+            messages.removeWhere(
+              (item) => item is SuperChatItem && deleted.contains('${item.id}'),
+            );
+            if (deleted.contains('${fsSC.value?.id}')) fsSC.value = null;
+          }
+          break;
         case 'WATCHED_CHANGE':
           watchedShow.value = obj['data']['text_large'];
           break;
         case 'ONLINE_RANK_COUNT':
           onlineCount.value = NumUtils.numFormat(obj['data']['count']);
+          refreshTopViewers();
           break;
         case 'ROOM_CHANGE':
           title.value = obj['data']['title'];
@@ -765,6 +986,59 @@ class LiveRoomController extends GetxController {
       ),
     );
   }
+
+  Future<LoadingState<Map<String, dynamic>>> sendTrackedDanmaku({
+    required String message,
+    int? dmType,
+    Object? emoticonOptions,
+    int replyMid = 0,
+    String replayDmid = '',
+    int mode = 1,
+    int color = 0xffffff,
+  }) async {
+    final account = Accounts.main;
+    final entry = deliveryTracker.begin(
+      account.mid,
+      message,
+      connected:
+          messageConnectionState.value == LiveMessageConnectionState.connected,
+    );
+    try {
+      final result = await LiveHttp.sendLiveMsg(
+        roomId: roomId,
+        msg: message,
+        dmType: dmType,
+        emoticonOptions: emoticonOptions,
+        replyMid: replyMid,
+        replayDmid: replayDmid,
+        mode: mode,
+        color: color,
+      );
+      if (result case Success(:final response)) {
+        deliveryTracker.accepted(
+          entry,
+          id: (response['id_str'] ?? response['dmid_str'] ?? response['dmid'])
+              ?.toString(),
+        );
+      } else {
+        deliveryTracker.failed(entry, reason: result.toString());
+      }
+      return result;
+    } catch (_) {
+      deliveryTracker.failed(entry, unknown: true);
+      return const Error('网络异常，发送结果未知，请先查看弹幕回显');
+    }
+  }
+
+  Future<void> onBuySuperChat(BuildContext context) =>
+      showLiveSuperChatPurchase(
+        context,
+        roomId: roomId,
+        anchorUid: ruid,
+        anchorName: roomInfoH5.value?.anchorInfo?.baseInfo?.uname ?? '当前主播',
+        areaId: roomInfoH5.value?.roomInfo?.areaId,
+        parentAreaId: roomInfoH5.value?.roomInfo?.parentAreaId,
+      );
 
   void onAtUser(DanmakuMsg item) {
     savedDanmaku = [

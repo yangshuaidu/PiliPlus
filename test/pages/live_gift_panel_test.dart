@@ -155,7 +155,7 @@ void main() {
     expect(find.text('测试礼物'), findsOneWidget);
     expect(find.text('互动'), findsNothing);
     expect(
-      tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '全部')).selected,
+      tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '礼物')).selected,
       isTrue,
     );
   });
@@ -186,7 +186,7 @@ void main() {
     tester,
   ) async {
     await openGiftPanel(tester, service);
-    await tester.tap(find.text('背包礼物'));
+    await tester.tap(find.text('包裹'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('测试礼物'));
     await tester.pump();

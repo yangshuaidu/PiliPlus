@@ -51,7 +51,25 @@ class _LiveDmBlockPageState extends State<LiveDmBlockPage> {
     );
 
     return SimpleScaffold(
-      appBar: AppBar(title: const Text('弹幕屏蔽')),
+      appBar: AppBar(
+        title: const Text('弹幕屏蔽'),
+        actions: [
+          Obx(
+            () => IconButton(
+              tooltip: '清空当前分类',
+              icon: const Icon(Icons.delete_sweep_outlined),
+              onPressed: _controller.busy.value
+                  ? null
+                  : () => showConfirmDialog(
+                      context: context,
+                      title: const Text('清空当前分类的全部屏蔽规则？'),
+                      content: const Text('将删除当前账号在平台上的这些规则。'),
+                      onConfirm: _controller.clearCurrent,
+                    ),
+            ),
+          ),
+        ],
+      ),
       body: Padding(
         padding: .only(left: padding.left, right: padding.right),
         child: Column(

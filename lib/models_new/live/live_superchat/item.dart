@@ -1,3 +1,5 @@
+import 'package:PiliPlus/models_new/live/gift/live_gift.dart';
+import 'package:PiliPlus/models_new/live/live_danmaku/live_user_badges.dart';
 import 'package:PiliPlus/models_new/live/live_medal_wall/uinfo_medal.dart';
 import 'package:PiliPlus/models_new/live/live_superchat/user_info.dart';
 import 'package:PiliPlus/utils/bili_utils.dart';
@@ -77,27 +79,44 @@ class SuperChatItem {
     );
   }
 
-  factory SuperChatItem.fromJson(Map<String, dynamic> json, int roomid) =>
-      SuperChatItem(
-        id: safeToInt(json['id']) ?? Utils.random.nextInt(2147483647),
-        uid: safeToInt(json['uid'])!,
-        price: json['price'],
-        backgroundImage: nonNullOrEmptyString(json['background_image']),
-        backgroundColor: json['background_color'] ?? '#EDF5FF',
-        backgroundBottomColor: json['background_bottom_color'] ?? '#2A60B2',
-        backgroundPriceColor: json['background_price_color'] ?? '#7497CD',
-        messageFontColor: json['message_font_color'] ?? '#FFFFFF',
-        startSime: safeToInt(json['start_time'])!,
-        endTime: safeToInt(json['end_time'])!,
-        message: json['message'],
-        token: json['token'],
-        ts: safeToInt(json['ts'])!,
-        userInfo: UserInfo.fromJson(json['user_info'] as Map<String, dynamic>),
-        medalInfo: GlobalData().showMedal
-            ? UinfoMedal.lightMedal(json['uinfo']?['medal'])
-            : null,
-        roomid: roomid,
-      );
+  factory SuperChatItem.fromJson(Map<String, dynamic> json, int roomid) {
+    final user = liveMap(json['uinfo']);
+    final base = liveMap(user['base']);
+    final legacy = liveMap(json['user_info']);
+    final badges = LiveUserBadges.parse(user, data: json);
+    UinfoMedal? medal;
+    if (!badges.anonymous && GlobalData().showMedal) {
+      try {
+        medal = UinfoMedal.lightMedal(user['medal']);
+      } catch (_) {}
+    }
+    return SuperChatItem(
+      id: safeToInt(json['id']) ?? 0,
+      uid: badges.anonymous ? 0 : safeToInt(user['uid'] ?? json['uid']) ?? 0,
+      price: safeToInt(json['price']) ?? 0,
+      backgroundImage: nonNullOrEmptyString(json['background_image']),
+      backgroundColor: json['background_color'] ?? '#EDF5FF',
+      backgroundBottomColor: json['background_bottom_color'] ?? '#2A60B2',
+      backgroundPriceColor: json['background_price_color'] ?? '#7497CD',
+      messageFontColor: json['message_font_color'] ?? '#FFFFFF',
+      startSime: safeToInt(json['start_time']) ?? 0,
+      endTime: safeToInt(json['end_time']) ?? 0,
+      message: '${json['message'] ?? ''}',
+      token: '${json['token'] ?? ''}',
+      ts: safeToInt(json['ts']) ?? 0,
+      userInfo: UserInfo.fromJson({
+        ...legacy,
+        'uname': badges.anonymous
+            ? '匿名观众'
+            : base['name'] ?? legacy['uname'] ?? '观众',
+        'face': badges.anonymous ? '' : base['face'] ?? legacy['face'] ?? '',
+        'face_frame': badges.anonymous ? null : legacy['face_frame'],
+        'name_color': base['name_color_str'] ?? legacy['name_color'],
+      }),
+      medalInfo: medal,
+      roomid: roomid,
+    );
+  }
 
   SuperChatItem copyWith({
     int? id,

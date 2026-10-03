@@ -33,6 +33,9 @@ abstract final class LiveGiftParser {
     final coin = config['coin_type']?.toString() ?? '';
     final scene = liveMap(entry['gift_scene']);
     final special = liveMap(entry['special']);
+    // The official catalogue models the red-packet launcher as a zero-price
+    // entry. It must never be submitted to either ordinary gift endpoint.
+    final isRedPacket = id == 13000 || liveInt(special['special_type']) == 4;
     final fixedCounts = liveInt(config['diy_count_map']) == 0
         ? liveMaps(config['count_map'])
               .map((item) => liveInt(item['num']))
@@ -41,7 +44,9 @@ abstract final class LiveGiftParser {
               .toList(growable: false)
         : null;
     String? reason;
-    if (id <= 0 ||
+    if (isRedPacket) {
+      reason = '请在红包面板选择红包类型与套餐';
+    } else if (id <= 0 ||
         price == null ||
         price < 0 ||
         !{'gold', 'silver'}.contains(coin)) {
@@ -88,6 +93,7 @@ abstract final class LiveGiftParser {
       allowedQuantities: fixedCounts,
       sendable: reason == null,
       unavailableReason: reason,
+      isRedPacket: isRedPacket,
     );
   }
 

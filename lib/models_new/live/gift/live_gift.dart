@@ -47,6 +47,7 @@ class LiveGift {
   final List<int>? allowedQuantities;
   final bool sendable;
   final String? unavailableReason;
+  final bool isRedPacket;
 
   const LiveGift({
     required this.id,
@@ -60,6 +61,7 @@ class LiveGift {
     this.allowedQuantities,
     this.sendable = false,
     this.unavailableReason,
+    this.isRedPacket = false,
   });
 
   String formatPrice(int raw) =>

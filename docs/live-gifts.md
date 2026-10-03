@@ -1,59 +1,87 @@
-# 直播间礼物
+# 直播间互动与消息
 
-直播间输入栏和全屏播放控制栏增加“礼物”入口，使用当前主账号读取礼物目录、背包及电池余额。支持给当前房主赠送普通电池礼物和已有背包礼物。发送前展示账号 UID、主播、房间、礼物、数量及费用；背包赠送显示库存消耗和 0 电池费用。
+本分支沿用原有播放器、弹幕输入、聊天／SC 页面、屏蔽管理和观众榜，在这些入口中扩展互动功能。没有新增账号系统，也不会自动送礼、付费、发送弹幕、关注或参与抽奖。
 
-电池礼物提供“全部”“常规”及官方 `tab_list` 返回的分类，例如互动、粉丝团、航海和专属。分类保留官方名称、顺序和成员关系，不根据礼物名称猜测；只有包含当前电池礼物的分类才显示。默认按电池单价从低到高排列，可切换从高到低；同价维持原顺序，未知价格置后。切换分类清除当前礼物选择，刷新时失效分类回到全部。背包礼物继续按库存列表展示；分组不会解除礼物原有的投喂限制。
+## 功能与入口
 
-消息列表和私聊页顶部的“直播中”标记可独立点击。标记使用现有用户信息接口解析房间号，再直接打开直播间；名字和头像保留个人主页入口。查询中阻止重复点击，标记点击不传递给外层会话或个人主页入口；找不到房间或查询失败时提示，不跳转到个人主页。
-
-## 实现来源与接口证据
-
-- 基线：上游 `main` 的 `334d758127c8126e7f3bb3df7470b3229bc9b0ee`。
-- 在 `main`、公开 `dev` / `dom` 分支中未找到相应赠礼接口；公开 PR [#3145](https://github.com/bggRGjQaUbCoE/PiliPlus/pull/3145) 的 `1f20ad3` 已有客户端实现。模型、目录解析、发送字段和回执校验参考并提取自该 PR，保持 GPL-3.0；未合入其 CDN、小窗、粉丝团、大航海等其他功能。
-- 2026-10-03 只读检查官方直播页及其公开脚本：
-  - 页面：<https://live.bilibili.com/21452505>
-  - 脚本：<https://s1.hdslb.com/bfs/static/blive/blfe-live-room/static/js/app.3b48f866e1563d25d39c.js>
-  - 脚本确认普通赠礼使用 `sendGoldMultiUser`，有 `bagID` 时改用 `sendBagMultiUser`；表单包含 `uid`、`gift_id`、`ruid`、`send_ruid`、`gift_num`、`coin_type`、`bag_id`、`biz_id`、`price`、`receive_users` 等。
-  - 匿名读取当前房间礼物目录成功，返回 `code=0`，本分支解析出 82 个电池礼物条目，其中 16 个因特殊机制或限制不可赠送。该样本不证明任何账号具备购买权限。
-
-| 用途 | 方法与路径（域名 `https://api.live.bilibili.com`） |
+| 入口 | 行为 |
 | --- | --- |
-| 房间礼物及分组 | GET `/xlive/web-room/v1/giftPanel/roomGiftList` |
-| 背包 | GET `/xlive/web-room/v1/gift/bag_list` |
-| 电池余额 | GET `/xlive/web-room/v1/index/getInfoByUser` |
-| 电池送礼 | POST `/xlive/revenue/v2/gift/sendGoldMultiUser` |
-| 背包送礼 | POST `/xlive/revenue/v2/gift/sendBagMultiUser` |
+| 礼物 | 单行可横向滚动的官方分类、价格排序、包裹、电池余额和官方充值入口；普通电池礼物及背包赠送 |
+| 礼物中的红包 | 原生礼物／上舰／电池红包套餐、开奖时间、数量、参与条件、附带弹幕、记录及规则；红包不会作为普通礼物提交 |
+| 顶部观众头像和人数 | 复用原观众榜：在线／日／周／月榜；同一面板切换大航海周／月／陪伴榜、上期榜首、自己的排名和官方上舰入口 |
+| 红包与天选 | 活动条件、倒计时、手动确认免费参与、开奖结果；小屏放在“更多”菜单，宽屏提供直接入口 |
+| 原有屏蔽按钮／更多 | 统一的直播消息与屏蔽面板：礼物及广播、礼物特效、抽奖弹幕、进场、SC、右下角表情、表情弹幕；分类选项保存在本机；进入原屏蔽词／用户管理并支持清空当前分类 |
+| 原弹幕输入面板 | 滚动／底部／顶部位置、官方颜色分组与账号锁定状态；非默认样式发送前重新核验权限；SC 购买入口 |
+| 原 SC 页面 | 保留查看能力并增加原生购买：服务器档位、自定义金额、中译日、已有定制动画素材、附加费用、账号和费用二次确认、订单留言查询 |
+| 视频画面 | PK 双方分数、阶段和倒计时；点击成员显示主播及房间资料和已有关注／跳转能力；礼物 GIF／WebP、官方允许在播放器展示的表情 |
+| 聊天区 | 榜单、荣耀等级、头衔、大航海、勋章、房管；自己和他人的赠礼、进场、关注及系统消息；连接状态、手动重连及本人弹幕回显状态 |
 
-目录请求传入实际房间、主播和已有分区信息。目录合并主列表与 `tab_list`，按礼物 ID 去重。价格与余额保留服务端原始整数 gold，仅在显示时按 100 gold = 1 电池换算；不做人民币换算。背包发送携带 `bag_id`，提交价格为 0，不自动切换成付费购买。
+移动端与桌面共用 Flutter 控件。面板限制最大宽度、正文可滚动，输入面板避让键盘；观众／大航海合并入口，减少顶部拥挤。礼物分类不换成多行；窄屏仍可滚动选择。礼物和表情视频叠加排除画中画。
 
-## 提交约束
+## 消息可靠性与隐私
 
-- 选择和确认绑定具体登录对象；切换主账号、重新登录、关闭面板或确认超过 60 秒后不得提交旧确认。
-- 确认前与实际发送前重新读取目录、余额和库存，检查价格、数量、固定数量规则、有效期、指定房间/主播及礼物权限。
-- 不把盲盒、抽奖或其他专用支付流程当普通礼物提交；不包含充值、SC 购买、大航海开通或向连麦嘉宾赠礼。
-- 专用 Dio 实例保留账号拦截器，移除自动重试和日志拦截器，禁止发送重定向。每次确认至多提交一次；同一账号的并发写入互斥。
-- 发送前将操作标记持久化并 flush 到 `liveGiftJournal`，只保存操作元数据，不保存 Cookie 或 CSRF。
-- `code=0` 之外还需匹配发送者、接收者、礼物、数量和回执标识才显示成功。超时、格式异常、回执不匹配或保存最终回执失败时显示结果未知，禁止自动重发。
-- 未知操作跨面板关闭和重启保留。用户在官方核对记录、库存和余额后，可明确解除该房间的待核对限制；该操作不重发、不把未知结果改成成功。
+- WebSocket 检查完整包头、遍历同一帧的多包、解开 zlib／Brotli 后继续逐包处理，心跳或单条坏消息不丢掉同帧后续消息。每个监听器的异常独立处理。
+- 会话按房间及账号分代，丢弃迟到的令牌、连接和事件；断线有限退避重连，失败后保留手动重试入口。只有稳定连接才重置重试预算。
+- 同时解析旧 `DANMU_MSG.info`、二进制 `dm_v2`、赠礼和新版 protobuf 多礼物广播；徽章损坏不丢弃可读正文。赠礼按回执去重，累计连击广播不重复计礼物。
+- 抽奖分类使用官方 `biz_scene`／旧协议位置中的场景 1、2，并补充当前活动的精确附带弹幕匹配；不按普通文本关键词猜测抽奖消息。
+- 本人发送追踪区分接口接受、当前连接收到回显、暂未收到、明确拒绝和结果未知。同一事件 ID 不会确认两条重复发送。没有回显不能证明被屏蔽；本机收到回显也不能证明所有其他观众可见。
+- 遵守明确的匿名标记，隐藏真实 UID、原始姓名、头像和身份装饰，不解析或展示风险控制／原身份字段。观众人数与榜单人数的差值不是隐身人数；不跨接口还原隐身身份。
+- SC 使用原消息卡片，兼容新旧用户资料；匿名 SC 不显示原始资料，删除事件移除对应展示。
 
-## 验证
+## 支付与参与约束
 
-使用隔离的 Flutter 3.47.6 / Dart 3.13.5 SDK 和依赖缓存，应用项目 Windows 构建流程列出的 SDK / Material UI 补丁，没有执行会修改全局 Git 配置的原始补丁脚本。
+普通礼物、红包、SC 和活动共享账号写入互斥；付费交易共用原礼物持久化记录和未知结果核对机制。
 
-```sh
-flutter test --no-pub --concurrency=1 \
-  test/utils/accounts/deleted_account_test.dart \
-  test/services/live_gift_service_test.dart \
-  test/pages/live_gift_panel_test.dart \
-  test/common/live_room_badge_test.dart
+- 操作绑定具体登录对象。账号变化、面板关闭或确认超时后不得提交旧确认。付费确认有效期 60 秒，免费活动确认 30 秒。
+- 付款确认列出账号 UID、主播、房间、套餐／留言、数量、时长、参与条件及总费用；红包附带弹幕和可能由平台执行的天选关注／弹幕行为必须明示。
+- 提交前重新读取价格、权限、库存／余额及活动条件；不信任已显示的缓存价。
+- 普通 gift 金额、红包金额和 SC `pay_gold` 使用原始整数 gold。只在显示时按 100 gold = 1 电池换算。SC 配置的 `price` 按官方客户端乘 1000；自定义金额要求 10 电池整数倍。定制动画附加费读取 `customize_dm.amount`。
+- 写入 transport 移除自动重试和日志拦截器、禁止重定向，并设置发送／读取超时。一次确认最多一次 POST。持久化提交中记录成功后才允许 POST，记录不保存 Cookie、CSRF 或留言原文。
+- 普通礼物匹配礼物回执；红包检查有效活动编号及可用的房间／发送者字段；SC 检查订单编号和状态，分别说明派发、待派发、审核。超时、缺失回执、未确认支付状态或记录落盘失败均保留待核对结果，不自动重发。
+- 未知记录跨关闭／重启保留。明确“已核对官方记录”仅解除限制，不重发也不把未知结果改成成功。
+- 原生抽奖仅提交已核对协议的免费参与，不包含礼物参数或代付。付费／任务型天选提供官方页面。
+- 官方充值和上舰使用浏览器；网页实际登录账号由用户在网页确认。
 
-flutter build bundle --no-pub --debug --target-platform windows-x64
-```
+## 当前边界
 
-- 40 个测试通过：27 个礼物模型/交易逻辑用例、8 个礼物界面用例、3 个直播标记交互用例、2 个原有账号删除回归用例。
-- 界面用例检查分组成员、排序及同价稳定性、未知价格置后、刷新与选择清理、付费确认信息、取消不发送、背包 0 电池、非法数量及 360×640 窗口带键盘的布局。
-- 直播标记用例检查嵌套 GestureDetector/InkWell 下的点击隔离、防重复查询及查询中页面关闭。
-- Windows 原生程序与安装包使用 `.github/workflows/win_x64.yml` 构建，工作流会先执行上述测试。具体提交的编译结果和下载产物以该提交对应的 Actions 运行记录为准。
-- 未登录真实账号做背包/余额读取验收，未实际赠送礼物或扣费。真实账号接口兼容性、实际回执、库存/余额扣减及各平台运行仍需单独验收。
+- 礼物动态展示支持官方 GIF／WebP，小型队列有界；不含大型 SVGA／MP4 特效、礼物音效及其完整官方编排。
+- 头衔使用平台提供的名称／图片；仅有 CSS 标识时显示中性“头衔”，不伪造官方美术。
+- 定制 SC 从平台已有素材中选择，不包含本地素材上传、删除和排序。
+- 服务端未提供的观众、PK 对手资料或隐私信息不补造。平台权限、风控、地区或账号限制仍由平台决定。
+- 不保证复刻官方客户端的所有活动，且不包含自动抢红包／自动天选。
 
-项目现有 `.gitignore` 使用 `test*` 忽略测试目录；本分支明确纳入上述新增测试和对应的假接口支持文件，未修改全局忽略规则。
+## 来源与可复核协议
+
+- 上游基线：`334d758127c8126e7f3bb3df7470b3229bc9b0ee`。
+- 优先检查公开 PR 后，礼物模型、普通送礼协议、WebSocket 拆包及会话恢复参考 [PiliPlus PR #3145](https://github.com/bggRGjQaUbCoE/PiliPlus/pull/3145) 的 `1f20ad352d3acdc1583cd834c0e0ab5b59535cbe`，遵循 GPL-3.0。未整体合并该 PR 的 CDN、粉丝团、小窗等改动。
+- 2026-10-03 对照公开官方脚本验证新增协议与展示字段：
+  - [直播间主脚本](https://s1.hdslb.com/bfs/static/blive/blfe-live-room/static/js/app.3b48f866e1563d25d39c.js)
+  - [红包面板](https://s1.hdslb.com/bfs/static/blive/blfe-live-room/static/js/757.2844b244377272c56ce5.js)
+  - [弹幕与 SC 面板](https://s1.hdslb.com/bfs/static/blive/blfe-live-room/static/js/9649.1063b9e512e83582c1bc.js)（实际构建文件名以官方页面清单为准）
+  - [官方 SC 页面](https://live.bilibili.com/p/html/live-app-superchat2/index.html)
+  - [官方天选页面](https://live.bilibili.com/p/html/live-lottery/anchor-join.html)
+
+API 域名均为 `https://api.live.bilibili.com`：
+
+| 用途 | 路径 |
+| --- | --- |
+| 普通礼物／背包 | `/xlive/web-room/v1/giftPanel/roomGiftList`、`/xlive/web-room/v1/gift/bag_list` |
+| 送礼 | `/xlive/revenue/v2/gift/sendGoldMultiUser`、`/xlive/revenue/v2/gift/sendBagMultiUser` |
+| 红包配置／发送／记录 | `/xlive/lottery-interface/v1/popularityRedPocket/RedPocketDetail`、`SendRedPocket`、`RedPocketHistory` |
+| 红包领取／结果 | 同上前缀 `RedPocketDraw`、`RedPocketGetWinners` |
+| 活动／天选 | `/xlive/lottery-interface/v1/lottery/getLotteryInfoWeb`、`/xlive/lottery-interface/v1/Anchor/Check`、`Join` |
+| 观众／大航海榜 | `/xlive/general-interface/v1/rank/queryContributionRank`、`/xlive/app-room/v2/guardTab/topListNew` |
+| PK | `/xlive/general-interface/v2/pk/info`、`/xlive/general-interface/v1/battle/getInfoById` |
+| 弹幕样式权限 | `/xlive/web-room/v1/dM/GetDMConfigByGroup` |
+| SC 配置／翻译／回读 | `/av/v1/SuperChat/config`、`messageTranslate`、`getMessage` |
+| SC 购买／素材 | `/xlive/revenue/v1/order/createOrder`、`/xlive/general-interface/v1/superChat/queryImage` |
+
+## 验证与验收边界
+
+开发验收使用 GitHub Actions 安装的 Flutter 3.47.6 和项目要求的补丁，不依赖开发电脑的 Flutter 或 Android SDK。`.github/workflows/build.yml`（Android）与 `.github/workflows/win_x64.yml`（Windows）均包含静态检查及 11 个测试文件，共 90 个用例，覆盖原有账号删除、直播标记、礼物、红包／天选、SC、拆包／重连／回显、匿名字段、徽章、PK 以及窄屏面板。
+
+UI 用例覆盖 320／360 像素竖屏、740×360 横屏、键盘避让，以及 Android／iOS／Windows 主题下 SC 确认与取消不提交。交易用例全部使用假接口，不产生真实礼物、SC 订单、弹幕或抽奖参与。
+
+以同一提交的 GitHub Actions 测试、静态检查、Windows 原生打包及 Android APK 构建记录为验收依据。构建成功与平台主题测试均不是手机真机运行证据。Android 沿用仓库签名设置；未配置发布签名密钥时使用调试证书，不能保证覆盖安装其他证书签名的已有应用。未使用真实账号执行扣费或抽奖参与，真实账户配置、回执、余额变化及各端真机显示仍需实际验收。
+
+项目 `.gitignore` 的 `test*` 规则不作全局修改；本分支明确纳入新增测试和假接口文件。

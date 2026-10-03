@@ -30,31 +30,45 @@ class _SuperChatPanelState extends DebounceStreamState<SuperChatPanel, bool>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Obx(
-      () => ListView.separated(
-        key: const PageStorageKey(_SuperChatPanelState),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        physics: platformClampingPhysics,
-        itemCount: widget.controller.superChatMsg.length,
-        findItemIndexCallback: (key) {
-          final index = widget.controller.superChatMsg.indexWhere(
-            (i) => i.id == (key as ValueKey<int>).value,
-          );
-          // Return item index directly - no need to multiply by 2.
-          return index == -1 ? null : index;
-        },
-        itemBuilder: (context, index) {
-          final item = widget.controller.superChatMsg[index];
-          return SuperChatCard(
-            key: ValueKey(item.id),
-            item: item,
-            onRemove: () => ctr?.add(true),
-            persistentSC: persistentSC,
-            onReport: () => widget.controller.reportSC(item),
-          );
-        },
-        separatorBuilder: (_, _) => const SizedBox(height: 8),
-      ),
+    return Column(
+      children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () => widget.controller.onBuySuperChat(context),
+            icon: const Icon(Icons.paid_outlined),
+            label: const Text('购买醒目留言'),
+          ),
+        ),
+        Expanded(
+          child: Obx(
+            () => ListView.separated(
+              key: const PageStorageKey(_SuperChatPanelState),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              physics: platformClampingPhysics,
+              itemCount: widget.controller.superChatMsg.length,
+              findItemIndexCallback: (key) {
+                final index = widget.controller.superChatMsg.indexWhere(
+                  (i) => i.id == (key as ValueKey<int>).value,
+                );
+                // Return item index directly - no need to multiply by 2.
+                return index == -1 ? null : index;
+              },
+              itemBuilder: (context, index) {
+                final item = widget.controller.superChatMsg[index];
+                return SuperChatCard(
+                  key: ValueKey(item.id),
+                  item: item,
+                  onRemove: () => ctr?.add(true),
+                  persistentSC: persistentSC,
+                  onReport: () => widget.controller.reportSC(item),
+                );
+              },
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
