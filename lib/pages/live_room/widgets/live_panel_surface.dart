@@ -167,6 +167,8 @@ class LivePanelSurface extends StatelessWidget {
         data: base.copyWith(
           brightness: Brightness.dark,
           colorScheme: colors,
+          // Chips paint their ink over a canvas Material of their own.
+          canvasColor: background,
           textTheme: base.textTheme.apply(
             bodyColor: Colors.white,
             displayColor: Colors.white,

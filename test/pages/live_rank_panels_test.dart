@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/http/loading_state.dart';
@@ -9,6 +10,7 @@ import 'package:PiliPlus/pages/live_room/contribution_rank/view.dart';
 import 'package:PiliPlus/pages/live_room/widgets/guard_rank_panel.dart';
 import 'package:PiliPlus/pages/live_room/widgets/live_panel_surface.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/rendering.dart';
 import 'package:material_ui/material_ui.dart';
 
 Map<String, dynamic> ranks(String name, {int pages = 1}) => {
@@ -74,16 +76,25 @@ void main() {
         ),
         home: Scaffold(
           body: LivePanelSurface(
-            child: LiveChoiceChip(
+            child: Center(child: RepaintBoundary(key: const ValueKey('chip-pixels'), child: LiveChoiceChip(
               label: const Text('月榜'),
               selected: false,
               onSelected: (_) {},
-            ),
+            ))),
           ),
         ),
       ),
     );
     final theme = Theme.of(tester.element(find.text('月榜')));
+    await tester.pumpAndSettle();
+    final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('chip-pixels')));
+    final image = await boundary.toImage();
+    final pixels = (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+    // Sample the rendered fill beside the label, including Material's canvas.
+    final offset = ((image.height ~/ 2) * image.width + image.width - 6) * 4;
+    final renderedFill = Color.fromARGB(255, pixels.getUint8(offset), pixels.getUint8(offset + 1), pixels.getUint8(offset + 2));
+    expect(renderedFill.computeLuminance(), lessThan(.1));
+    image.dispose();
     final fill = Color.alphaBlend(
       theme.chipTheme.backgroundColor!,
       livePanelBackground,
