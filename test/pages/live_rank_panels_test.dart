@@ -88,6 +88,7 @@ void main() {
     final theme = Theme.of(tester.element(find.text('月榜')));
     await tester.pumpAndSettle();
     final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('chip-pixels')));
+    await tester.runAsync(() async {
     final image = await boundary.toImage();
     final pixels = (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
     // Sample the rendered fill beside the label, including Material's canvas.
@@ -95,6 +96,7 @@ void main() {
     final renderedFill = Color.fromARGB(255, pixels.getUint8(offset), pixels.getUint8(offset + 1), pixels.getUint8(offset + 2));
     expect(renderedFill.computeLuminance(), lessThan(.1));
     image.dispose();
+    });
     final fill = Color.alphaBlend(
       theme.chipTheme.backgroundColor!,
       livePanelBackground,
