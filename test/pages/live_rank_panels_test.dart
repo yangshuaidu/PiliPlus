@@ -76,26 +76,40 @@ void main() {
         ),
         home: Scaffold(
           body: LivePanelSurface(
-            child: Center(child: RepaintBoundary(key: const ValueKey('chip-pixels'), child: LiveChoiceChip(
-              label: const Text('月榜'),
-              selected: false,
-              onSelected: (_) {},
-            ))),
+            child: Center(
+              child: RepaintBoundary(
+                key: const ValueKey('chip-pixels'),
+                child: LiveChoiceChip(
+                  label: const Text('月榜'),
+                  selected: false,
+                  onSelected: (_) {},
+                ),
+              ),
+            ),
           ),
         ),
       ),
     );
     final theme = Theme.of(tester.element(find.text('月榜')));
     await tester.pumpAndSettle();
-    final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('chip-pixels')));
+    final boundary = tester.renderObject<RenderRepaintBoundary>(
+      find.byKey(const ValueKey('chip-pixels')),
+    );
     await tester.runAsync(() async {
-    final image = await boundary.toImage();
-    final pixels = (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
-    // Sample the rendered fill beside the label, including Material's canvas.
-    final offset = ((image.height ~/ 2) * image.width + image.width - 6) * 4;
-    final renderedFill = Color.fromARGB(255, pixels.getUint8(offset), pixels.getUint8(offset + 1), pixels.getUint8(offset + 2));
-    expect(renderedFill.computeLuminance(), lessThan(.1));
-    image.dispose();
+      final image = await boundary.toImage();
+      final pixels = (await image.toByteData(
+        format: ui.ImageByteFormat.rawRgba,
+      ))!;
+      // Sample the rendered fill beside the label, including Material's canvas.
+      final offset = ((image.height ~/ 2) * image.width + image.width - 6) * 4;
+      final renderedFill = Color.fromARGB(
+        255,
+        pixels.getUint8(offset),
+        pixels.getUint8(offset + 1),
+        pixels.getUint8(offset + 2),
+      );
+      expect(renderedFill.computeLuminance(), lessThan(.1));
+      image.dispose();
     });
     final fill = Color.alphaBlend(
       theme.chipTheme.backgroundColor!,
