@@ -183,64 +183,83 @@ class LiveRoomChatPanel extends StatelessWidget {
                           behavior: HitTestBehavior.opaque,
                           onTap: () => _openMessage(context, item),
                           child: Container(
-                          constraints: const BoxConstraints(minHeight: 40),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isPP ? 8 : 0,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: bg,
-                            borderRadius: const .all(.circular(14)),
-                          ),
-                          child: Text.rich(
-                            style: const TextStyle(fontSize: 15, height: 1.4, color: Colors.white),
-                            TextSpan(
-                              children: [
-                                if (showBadges) ...liveBadgeSpans(item.badges, onTap: () => _openMessage(context, item, profile: true)),
-                                if (item.extra.mid == liveRoomController.ruid)
-                                  const WidgetSpan(
-                                    child: Padding(
-                                      padding: .only(right: 4),
-                                      child: PBadge(
-                                        text: '主播',
-                                        isStack: false,
-                                        type: .line_primary,
+                            constraints: const BoxConstraints(minHeight: 40),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isPP ? 8 : 0,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: bg,
+                              borderRadius: const .all(.circular(14)),
+                            ),
+                            child: Text.rich(
+                              style: const TextStyle(
+                                fontSize: 15,
+                                height: 1.4,
+                                color: Colors.white,
+                              ),
+                              TextSpan(
+                                children: [
+                                  if (showBadges)
+                                    ...liveBadgeSpans(
+                                      item.badges,
+                                      onTap: () => _openMessage(
+                                        context,
+                                        item,
+                                        profile: true,
                                       ),
                                     ),
-                                  ),
-                                ?medal,
-                                TextSpan(
-                                  text: '${item.name}: ',
-                                  style: TextStyle(
-                                    color:
-                                        liveNameColor(item.badges.nameColor) ??
-                                        nameColor,
-                                    fontSize: 15,
-                                  ),
-                                  recognizer: item.extra.mid == 0
-                                      ? null
-                                      : (NoDeadlineTapGestureRecognizer()
-                                          ..onTap = () => _openMessage(context, item, profile: true)),
-                                ),
-                                if (item.reply case final reply?)
+                                  if (item.extra.mid == liveRoomController.ruid)
+                                    const WidgetSpan(
+                                      child: Padding(
+                                        padding: .only(right: 4),
+                                        child: PBadge(
+                                          text: '主播',
+                                          isStack: false,
+                                          type: .line_primary,
+                                        ),
+                                      ),
+                                    ),
+                                  ?medal,
                                   TextSpan(
-                                    text: '@${reply.name} ',
+                                    text: '${item.name}: ',
                                     style: TextStyle(
-                                      color: primary,
+                                      color:
+                                          liveNameColor(
+                                            item.badges.nameColor,
+                                          ) ??
+                                          nameColor,
                                       fontSize: 15,
                                     ),
-                                    recognizer: (reply.mid ?? 0) <= 0
+                                    recognizer: item.extra.mid == 0
                                         ? null
                                         : (NoDeadlineTapGestureRecognizer()
-                                            ..onTap = () => Get.toNamed(
-                                              '/member?mid=${reply.mid}',
+                                            ..onTap = () => _openMessage(
+                                              context,
+                                              item,
+                                              profile: true,
                                             )),
                                   ),
-                                _buildMsg(item),
-                              ],
+                                  if (item.reply case final reply?)
+                                    TextSpan(
+                                      text: '@${reply.name} ',
+                                      style: TextStyle(
+                                        color: primary,
+                                        fontSize: 15,
+                                      ),
+                                      recognizer: (reply.mid ?? 0) <= 0
+                                          ? null
+                                          : (NoDeadlineTapGestureRecognizer()
+                                              ..onTap = () => Get.toNamed(
+                                                '/member?mid=${reply.mid}',
+                                              )),
+                                    ),
+                                  _buildMsg(item),
+                                ],
+                              ),
                             ),
                           ),
-                        ));
+                        );
                       },
                     ),
                   );
@@ -467,7 +486,11 @@ class LiveRoomChatPanel extends StatelessWidget {
               child: NetworkImgLayer(
                 src: emote.url,
                 type: .emote,
-                width: emote.height > 0 ? (28.0 * emote.width / emote.height).clamp(16.0, 84.0).toDouble() : 28,
+                width: emote.height > 0
+                    ? (28.0 * emote.width / emote.height)
+                          .clamp(16.0, 84.0)
+                          .toDouble()
+                    : 28,
                 height: 28,
               ),
             ),
@@ -499,14 +522,27 @@ class LiveRoomChatPanel extends StatelessWidget {
     }
   }
 
-  Future<void> _openMessage(BuildContext context, DanmakuMsg item, {bool profile = false}) async {
-    final autoScroll = liveRoomController.autoScroll && !liveRoomController.disableAutoScroll.value;
+  Future<void> _openMessage(
+    BuildContext context,
+    DanmakuMsg item, {
+    bool profile = false,
+  }) async {
+    final autoScroll =
+        liveRoomController.autoScroll &&
+        !liveRoomController.disableAutoScroll.value;
     if (autoScroll) liveRoomController.autoScroll = false;
     try {
-      if (profile) { await showLiveUserPanel(context, liveRoomController, item); }
-      else { await showLiveMessageActions(context, liveRoomController, item); }
+      if (profile) {
+        await showLiveUserPanel(context, liveRoomController, item);
+      } else {
+        await showLiveMessageActions(context, liveRoomController, item);
+      }
     } finally {
-      if (autoScroll && context.mounted) { liveRoomController..autoScroll = true..scrollToBottom(); }
+      if (autoScroll && context.mounted) {
+        liveRoomController
+          ..autoScroll = true
+          ..scrollToBottom();
+      }
     }
   }
 }

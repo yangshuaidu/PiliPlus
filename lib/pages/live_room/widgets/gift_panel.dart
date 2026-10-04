@@ -80,7 +80,9 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
     if (_busy || gift == null || snapshot == null) return;
     final count = int.tryParse(_quantity.text);
     if (count == null || count < 1 || count > gift.maxQuantity) {
-      setState(() => _message = '请输入 1–${gift.maxQuantity} 的整数数量');
+      // Rebuild the footer validation even if a stale button callback fires
+      // before the text field's scheduled rebuild.
+      setState(() {});
       return;
     }
     setState(() {
@@ -574,8 +576,10 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
         ? '请选择支持的赠送数量'
         : bag != null && count > bag.quantity
         ? '包裹数量不足'
-        : bag == null && selected.coinType == 'gold' &&
-            (_snapshot?.wallet.gold == null || selected.price * count > _snapshot!.wallet.gold!)
+        : bag == null &&
+              selected.coinType == 'gold' &&
+              (_snapshot?.wallet.gold == null ||
+                  selected.price * count > _snapshot!.wallet.gold!)
         ? '余额不足或暂时无法核验余额'
         : null;
     return Padding(
@@ -585,7 +589,8 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
         children: [
           if (selected != null)
             Text(
-              unavailable ?? '${selected.name} · ${_bagItem == null ? '合计 ${liveBatteryAmount(selected.price * count)} 电池' : '消耗 $count 个包裹礼物'}',
+              unavailable ??
+                  '${selected.name} · ${_bagItem == null ? '合计 ${liveBatteryAmount(selected.price * count)} 电池' : '消耗 $count 个包裹礼物'}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(

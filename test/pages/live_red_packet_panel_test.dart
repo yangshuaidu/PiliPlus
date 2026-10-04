@@ -10,7 +10,11 @@ import '../support/live_room_actions_fakes.dart';
 class RecoveringRedTransport extends ActivityTransport {
   bool limited = true;
   @override
-  Future<Map<String, dynamic>> get(String path, Map<String, dynamic> query, LiveGiftAccount account) {
+  Future<Map<String, dynamic>> get(
+    String path,
+    Map<String, dynamic> query,
+    LiveGiftAccount account,
+  ) {
     if (limited && path.endsWith('/RedPocketDetail')) {
       return Future.value({'code': -1, 'message': '红包数量超过限制'});
     }
@@ -19,13 +23,28 @@ class RecoveringRedTransport extends ActivityTransport {
 }
 
 void main() {
-  testWidgets('successful refresh clears a previous server limit error', (tester) async {
+  testWidgets('successful refresh clears a previous server limit error', (
+    tester,
+  ) async {
     final transport = RecoveringRedTransport();
     final account = LiveGiftAccount(100, FakeLoginIdentity(), 'test');
-    final gifts = LiveGiftService(roomId: 200, anchorUid: 300, transport: transport,
-      journal: FakeJournal(), currentAccount: () => account);
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: LiveRedPacketPanel(
-      service: LiveRedPacketService(gifts), anchorName: '测试主播'))));
+    final gifts = LiveGiftService(
+      roomId: 200,
+      anchorUid: 300,
+      transport: transport,
+      journal: FakeJournal(),
+      currentAccount: () => account,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: LiveRedPacketPanel(
+            service: LiveRedPacketService(gifts),
+            anchorName: '测试主播',
+          ),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('红包数量超过限制'), findsOneWidget);
     transport.limited = false;
@@ -74,7 +93,8 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.tap(find.byType(ListTile).first);
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('发红包 · 10 电池'));
+    await tester.scrollUntilVisible(find.text('发红包 · 10 电池'), 120);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('发红包 · 10 电池'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));

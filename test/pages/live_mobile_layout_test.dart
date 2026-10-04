@@ -7,13 +7,24 @@ import 'package:PiliPlus/pages/live_room/live_room_settings.dart';
 import 'package:PiliPlus/pages/live_room/widgets/gift_panel.dart';
 import 'package:PiliPlus/pages/live_room/widgets/live_panel_surface.dart';
 import 'package:PiliPlus/pages/live_room/widgets/live_settings_panel.dart';
+import 'package:PiliPlus/pages/live_room/widgets/live_user_panel.dart';
+import 'package:PiliPlus/pages/live_room/widgets/red_packet_panel.dart';
+import 'package:PiliPlus/pages/live_room/widgets/superchat_purchase_panel.dart';
+import 'package:PiliPlus/models_new/live/live_danmaku/danmaku_msg.dart';
+import 'package:PiliPlus/models_new/live/live_danmaku/live_user_badges.dart';
+import 'package:PiliPlus/pages/danmaku/danmaku_model.dart';
 import 'package:PiliPlus/services/live_gift_service.dart';
+import 'package:PiliPlus/services/live_red_packet_service.dart';
+import 'package:PiliPlus/services/live_superchat_service.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../support/live_gift_fakes.dart';
+import '../support/live_room_actions_fakes.dart';
+import '../support/live_superchat_fakes.dart';
+import '../support/live_profile_storage.dart';
 
 LiveRoomSettings settings() =>
     LiveRoomSettings(read: (_) => null, write: (_, _) async {})..load();
@@ -141,6 +152,7 @@ Future<void> capture(WidgetTester tester, String name) async {
 }
 
 void main() {
+  setUpLiveProfileStorage();
   setUpAll(() async {
     final path = Platform.environment['CJK_TEST_FONT'];
     if (path != null) {
@@ -150,6 +162,9 @@ void main() {
         File(path).readAsBytes().then((bytes) => ByteData.sublistView(bytes)),
       );
       await loader.load();
+      final icons = FontLoader('MaterialIcons');
+      icons.addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
+      await icons.load();
     }
   });
 
@@ -314,4 +329,38 @@ void main() {
     expect(panel.width, lessThanOrEqualTo(370));
     expect(panel.height, lessThanOrEqualTo(360));
   });
+
+  for (final kind in ['profile', 'red-packet', 'superchat']) {
+    testWidgets('iPhone 17 safe-area $kind panel fits and dismisses outside', (tester) async {
+      tester.view.physicalSize = const Size(1206, 2622);
+      tester.view.devicePixelRatio = 3;
+      tester.view.padding = const FakeViewPadding(top: 186, bottom: 102);
+      addTearDown(tester.view.reset);
+      final transport = kind == 'superchat' ? ScTransport() : ActivityTransport();
+      final account = LiveGiftAccount(100, FakeLoginIdentity(), 'test');
+      final gifts = LiveGiftService(roomId: 200, anchorUid: 300, transport: transport,
+        journal: FakeJournal(), currentAccount: () => account);
+      await tester.pumpWidget(preview((_) => switch (kind) {
+        'profile' => LiveUserPanel(item: DanmakuMsg(name: '测试观众', text: '测试弹幕',
+          extra: const LiveDanmaku(mid: 123, id: '1', dmType: 0, ts: 0, ct: ''),
+          badges: const LiveUserBadges(wealth: 37, medalName: '汐音', medalLevel: 27, title: '测试头衔')),
+          loader: (_) async => const LiveProfileInfo(name: '测试观众', followers: 55, following: 51)),
+        'red-packet' => LiveRedPacketPanel(service: LiveRedPacketService(gifts), anchorName: '测试主播'),
+        _ => LiveSuperChatPurchasePanel(service: LiveSuperChatService(gifts), anchorName: '测试主播'),
+      }));
+      await tester.tap(find.text('打开面板'));
+      await tester.pumpAndSettle();
+      final panel = find.byKey(const ValueKey('live-panel-surface'));
+      expect(tester.getSize(panel).width, 402);
+      expect(tester.getTopLeft(panel).dy, greaterThanOrEqualTo(tester.getBottomRight(find.byKey(const ValueKey('video-region'))).dy));
+      expect(tester.takeException(), isNull);
+      await capture(tester, 'ios17-$kind');
+      await tester.tapAt(const Offset(20, 150));
+      await tester.pumpAndSettle();
+      expect(panel, findsNothing);
+      expect(transport.postCount, 0);
+      await tester.pumpWidget(const SizedBox());
+      gifts.dispose();
+    });
+  }
 }

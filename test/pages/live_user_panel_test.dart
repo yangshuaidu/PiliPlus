@@ -7,7 +7,10 @@ import 'package:PiliPlus/pages/live_room/widgets/live_user_panel.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../support/live_profile_storage.dart';
+
 void main() {
+  setUpLiveProfileStorage();
   testWidgets('iPhone 17 at 3x opens badge details and dismisses outside', (
     tester,
   ) async {
