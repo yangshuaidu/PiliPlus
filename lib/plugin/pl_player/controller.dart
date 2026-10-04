@@ -1,4 +1,5 @@
 import 'dart:async' show StreamSubscription, Timer;
+import 'package:PiliPlus/plugin/pl_player/utils/background_playback_policy.dart';
 import 'dart:convert' show ascii, utf8;
 import 'dart:io' show Platform;
 import 'dart:math' show max, min;
@@ -131,6 +132,10 @@ class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
 
   late final RxBool continuePlayInBackground =
       Pref.continuePlayInBackground.obs;
+  late final RxBool continueLiveInBackground = Pref.continueLiveInBackground.obs;
+  final backgroundPlaybackPolicy = BackgroundPlaybackPolicy();
+  bool get keepPlayingInBackground => isLive
+      ? continueLiveInBackground.value : continuePlayInBackground.value;
 
   bool _autoPlay = false;
 
@@ -1192,6 +1197,7 @@ class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
 
   /// 暂停播放
   Future<void> pause({bool notify = true, bool isInterrupt = false}) async {
+    backgroundPlaybackPolicy.cancelResume();
     await _videoPlayerController?.pause();
     playerStatus = .paused;
 
@@ -1662,6 +1668,11 @@ class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
         continuePlayInBackground.value,
       );
     }
+  }
+
+  void setContinueLiveInBackground(bool value) {
+    continueLiveInBackground.value = value;
+    if (!tempPlayerConf) setting.put(SettingBoxKey.continueLiveInBackground, value);
   }
 
   late final Map<String, ui.Image?> previewCache = {};

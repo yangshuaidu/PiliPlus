@@ -896,6 +896,9 @@ abstract final class Pref {
   static bool get continuePlayInBackground =>
       _setting.get(SettingBoxKey.continuePlayInBackground, defaultValue: false);
 
+  static bool get continueLiveInBackground =>
+      _setting.get(SettingBoxKey.continueLiveInBackground, defaultValue: true);
+
   static bool get directExitOnBack =>
       _setting.get(SettingBoxKey.directExitOnBack, defaultValue: false);
 

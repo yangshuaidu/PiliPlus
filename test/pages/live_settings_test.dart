@@ -1,3 +1,4 @@
+import 'package:PiliPlus/pages/live_room/widgets/live_panel_surface.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -60,9 +61,9 @@ Widget app(
   home: Scaffold(
     body: Builder(
       builder: (context) => TextButton(
-        onPressed: () => showDialog<void>(
-          context: context,
-          builder: (_) => LiveSettingsPanel(
+        onPressed: () => showLivePanel<void>(
+          context,
+           (_) => LiveSettingsPanel(
             settings: settings,
             initialSection: section,
             superChatAvailable: superChatAvailable,
@@ -410,12 +411,12 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('字体、透明度与显示区域'));
       expect(display, 1);
-      await tester.tap(find.widgetWithText(ChoiceChip, '礼物'));
+      await tester.tap(find.text('礼物'));
       await tester.pumpAndSettle();
       expect(find.text('礼物设置'), findsOneWidget);
       expect(find.byKey(const ValueKey('giftEffects')), findsOneWidget);
       expect(find.byKey(const ValueKey('entryNotices')), findsNothing);
-      await tester.tap(find.widgetWithText(ChoiceChip, '通知'));
+      await tester.tap(find.text('通知'));
       await tester.pumpAndSettle();
       expect(find.text('通知设置'), findsOneWidget);
       expect(find.byKey(const ValueKey('entryNotices')), findsOneWidget);

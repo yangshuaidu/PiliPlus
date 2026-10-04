@@ -767,6 +767,13 @@ class _LiveRoomPageState extends State<LiveRoomPage>
             final liveUrl =
                 'https://live.bilibili.com/${_liveRoomController.roomId}';
             return <PopupMenuEntry>[
+              if (PlatformUtils.isMobile)
+                CheckedPopupMenuItem(
+                  checked: plPlayerController.continueLiveInBackground.value,
+                  onTap: () => plPlayerController.setContinueLiveInBackground(
+                    !plPlayerController.continueLiveInBackground.value),
+                  child: const Text('后台听直播'),
+                ),
               if (compactHeader)
                 PopupMenuItem(
                   onTap: () => showLiveActivities(
@@ -955,169 +962,78 @@ class _LiveRoomPageState extends State<LiveRoomPage>
   }
 
   Widget get _buildInputWidget {
-    final child = Container(
-      padding: .only(top: 5, left: 10, right: 10, bottom: padding.bottom),
-      height: 70 + padding.bottom,
-      decoration: const BoxDecoration(
-        borderRadius: .vertical(top: .circular(20)),
-        border: Border(top: BorderSide(color: Color(0x1AFFFFFF))),
-        color: Color(0x1AFFFFFF),
-      ),
-      child: GestureDetector(
-        onTap: _liveRoomController.onSendDanmaku,
-        behavior: .opaque,
-        child: Padding(
-          padding: const .only(top: 5, bottom: 10),
-          child: Align(
-            alignment: .topCenter,
-            child: Row(
-              spacing: 6,
-              children: [
-                Obx(
-                  () {
-                    final enableShowLiveDanmaku =
-                        plPlayerController.enableShowLiveDanmaku.value;
-                    return SizedBox(
-                      width: 34,
-                      height: 34,
-                      child: IconButton(
-                        style: IconButton.styleFrom(padding: .zero),
-                        onPressed: () => _liveRoomController.setDanmakuVisible(
-                          !enableShowLiveDanmaku,
-                        ),
-                        icon: enableShowLiveDanmaku
-                            ? const Icon(
-                                size: 22,
-                                CustomIcons.dm_on,
-                                color: baseWhite,
-                              )
-                            : const Icon(
-                                size: 22,
-                                CustomIcons.dm_off,
-                                color: baseWhite,
-                              ),
-                      ),
-                    );
-                  },
-                ),
-                const Expanded(
-                  child: Text('发送弹幕', style: TextStyle(color: baseWhite)),
-                ),
-                IconButton(
-                  tooltip: '礼物',
-                  style: IconButton.styleFrom(padding: EdgeInsets.zero),
-                  onPressed: () => showLiveGiftPanel(
-                    context,
-                    roomId: _liveRoomController.roomId,
-                    anchorUid: _liveRoomController.ruid,
-                    anchorName:
-                        _liveRoomController
-                            .roomInfoH5
-                            .value
-                            ?.anchorInfo
-                            ?.baseInfo
-                            ?.uname ??
-                        '当前主播',
-                    areaId:
-                        _liveRoomController.roomInfoH5.value?.roomInfo?.areaId,
-                    parentAreaId: _liveRoomController
-                        .roomInfoH5
-                        .value
-                        ?.roomInfo
-                        ?.parentAreaId,
-                  ),
-                  icon: const Icon(
-                    Icons.card_giftcard,
-                    size: 22,
-                    color: baseWhite,
-                  ),
-                ),
-                Builder(
-                  builder: (context) {
-                    final isLogin = kDebugMode || _liveRoomController.isLogin;
-                    final colorScheme = ColorScheme.of(context);
-                    return Material(
-                      type: MaterialType.transparency,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          InkWell(
-                            overlayColor: _overlayColor(colorScheme),
-                            customBorder: const CircleBorder(),
-                            onTap: isLogin
-                                ? null
-                                : _liveRoomController.toastNotLogin,
-                            onTapDown: isLogin
-                                ? _liveRoomController.onLikeTapDown
-                                : null,
-                            onTapUp: isLogin
-                                ? _liveRoomController.onLikeTapUp
-                                : null,
-                            onTapCancel: isLogin
-                                ? _liveRoomController.onLikeTapUp
-                                : null,
-                            child: const SizedBox.square(
-                              dimension: 34,
-                              child: Icon(
-                                size: 22,
-                                color: baseWhite,
-                                Icons.thumb_up_off_alt,
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            left: 30,
-                            top: -12,
-                            child: Obx(() {
-                              final likeClickTime =
-                                  _liveRoomController.likeClickTime.value;
-                              if (likeClickTime == 0) {
-                                return const SizedBox.shrink();
-                              }
-                              return AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 160),
-                                transitionBuilder: (child, animation) {
-                                  return ScaleTransition(
-                                    scale: animation,
-                                    child: child,
-                                  );
-                                },
-                                child: Text(
-                                  key: ValueKey(likeClickTime),
-                                  'x$likeClickTime',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: colorScheme.isDark
-                                        ? colorScheme.primary
-                                        : colorScheme.inversePrimary,
-                                  ),
-                                ),
-                              );
-                            }),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                SizedBox(
-                  width: 34,
-                  height: 34,
-                  child: IconButton(
-                    style: IconButton.styleFrom(padding: EdgeInsets.zero),
-                    onPressed: () => _liveRoomController.onSendDanmaku(true),
-                    icon: const Icon(
-                      size: 22,
-                      color: baseWhite,
-                      Icons.emoji_emotions_outlined,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    final child = Padding(
+      padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + padding.bottom),
+      child: SizedBox(height: 44, child: Row(children: [
+        Expanded(child: Material(
+          color: const Color(0xFF383740),
+          borderRadius: BorderRadius.circular(24),
+          child: InkWell(
+            onTap: _liveRoomController.onSendDanmaku,
+            borderRadius: BorderRadius.circular(24),
+            child: Row(children: [
+              Obx(() => IconButton(
+                tooltip: '画面弹幕',
+                constraints: const BoxConstraints.tightFor(width: 38, height: 44),
+                padding: EdgeInsets.zero,
+                onPressed: () => _liveRoomController.setDanmakuVisible(
+                  !plPlayerController.enableShowLiveDanmaku.value),
+                icon: Icon(plPlayerController.enableShowLiveDanmaku.value
+                    ? CustomIcons.dm_on : CustomIcons.dm_off,
+                  color: Colors.white70, size: 20),
+              )),
+              const Expanded(child: Text('发个弹幕聊聊', maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 14, color: Colors.white70))),
+              IconButton(
+                tooltip: '表情弹幕',
+                constraints: const BoxConstraints.tightFor(width: 38, height: 44),
+                padding: EdgeInsets.zero,
+                onPressed: () => _liveRoomController.onSendDanmaku(true),
+                icon: const Icon(Icons.emoji_emotions_outlined, color: Colors.white70, size: 24)),
+            ]),
           ),
+        )),
+        const SizedBox(width: 8),
+        Builder(builder: (context) {
+          final isLogin = kDebugMode || _liveRoomController.isLogin;
+          return Material(
+            color: const Color(0xFF383740), shape: const CircleBorder(),
+            child: Tooltip(message: '点赞', child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: isLogin ? null : _liveRoomController.toastNotLogin,
+              onTapDown: isLogin ? _liveRoomController.onLikeTapDown : null,
+              onTapUp: isLogin ? _liveRoomController.onLikeTapUp : null,
+              onTapCancel: isLogin ? _liveRoomController.onLikeTapUp : null,
+              child: SizedBox.square(dimension: 44,
+                child: Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: [
+                  const Icon(Icons.thumb_up_off_alt, color: Colors.white, size: 22),
+                  Positioned(top: -12, right: 0, child: Obx(() {
+                    final count = _liveRoomController.likeClickTime.value;
+                    return count == 0 ? const SizedBox.shrink() : Text('x$count',
+                      style: const TextStyle(color: Color(0xFFFB7299), fontSize: 12));
+                  })),
+                ])),
+            )),
+          );
+        }),
+        const SizedBox(width: 8),
+        IconButton.filled(
+          tooltip: '礼物',
+          style: IconButton.styleFrom(
+            backgroundColor: const Color(0xFFFB7299), foregroundColor: Colors.white,
+            fixedSize: const Size(44, 44), padding: EdgeInsets.zero),
+          onPressed: () => showLiveGiftPanel(
+            context,
+            roomId: _liveRoomController.roomId,
+            anchorUid: _liveRoomController.ruid,
+            anchorName: _liveRoomController.roomInfoH5.value?.anchorInfo?.baseInfo?.uname ?? '当前主播',
+            areaId: _liveRoomController.roomInfoH5.value?.roomInfo?.areaId,
+            parentAreaId: _liveRoomController.roomInfoH5.value?.roomInfo?.parentAreaId,
+          ),
+          icon: const Icon(Icons.card_giftcard_rounded, size: 24),
         ),
-      ),
+      ])),
     );
     if (_liveRoomController.showSuperChat) {
       return Stack(
@@ -1140,21 +1056,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
     return child;
   }
 
-  WidgetStateProperty<Color?>? _overlayColor(ColorScheme colorScheme) =>
-      WidgetStateProperty.resolveWith((Set<WidgetState> states) {
-        final color = states.contains(WidgetState.selected)
-            ? colorScheme.primary
-            : colorScheme.onSurfaceVariant;
-        if (states.contains(WidgetState.pressed)) {
-          return color.withValues(alpha: 0.1);
-        } else if (states.contains(WidgetState.hovered)) {
-          return color.withValues(alpha: 0.08);
-        } else if (states.contains(WidgetState.focused)) {
-          return color.withValues(alpha: 0.1);
-        } else {
-          return Colors.transparent;
-        }
-      });
+
 }
 
 class _BorderIndicator extends LeafRenderObjectWidget {

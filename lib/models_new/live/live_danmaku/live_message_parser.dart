@@ -162,6 +162,7 @@ class LiveGiftMessage {
     this.giftId = 0,
     this.imageUrl = '',
     this.animationUrl = '',
+    this.guardPurchase = false,
     this.badges = const LiveUserBadges(),
   });
   final int uid;
@@ -170,6 +171,7 @@ class LiveGiftMessage {
   final int giftId;
   final String imageUrl, animationUrl;
   final LiveUserBadges badges;
+  final bool guardPurchase;
 
   static List<LiveGiftMessage> parseAll(dynamic event) {
     final root = LiveMessageParser.map(event);
@@ -236,6 +238,7 @@ class LiveGiftMessage {
       ),
       badges: LiveUserBadges.parse(user, data: data),
       action: cmd == 'GUARD_BUY' ? '开通' : '${data['action'] ?? '赠送'}',
+      guardPurchase: cmd == 'GUARD_BUY',
       id: data['tid'] == null
           ? ''
           : 'gift:${data['tid']}:${data['giftId'] ?? data['gift_id'] ?? gift}',

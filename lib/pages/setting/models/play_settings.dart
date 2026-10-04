@@ -214,6 +214,14 @@ List<SettingsModel> get playSettings => [
       setKey: SettingBoxKey.continuePlayInBackground,
       defaultVal: false,
     ),
+  if (PlatformUtils.isMobile)
+    const SwitchModel(
+      title: '直播后台播放',
+      subtitle: '切换应用或锁屏后继续听直播，与普通视频设置独立',
+      leading: Icon(Icons.headphones_outlined),
+      setKey: SettingBoxKey.continueLiveInBackground,
+      defaultVal: true,
+    ),
   if (Platform.isAndroid) ...[
     SwitchModel(
       title: '后台画中画',

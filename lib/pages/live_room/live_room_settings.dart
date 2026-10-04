@@ -21,13 +21,19 @@ enum LiveRoomOption {
   lotteryDanmaku(LiveSettingsSection.danmaku, '显示抽奖弹幕'),
   superChats(LiveSettingsSection.danmaku, '显示醒目留言'),
   giftMessages(LiveSettingsSection.gifts, '显示赠礼消息'),
-  giftBroadcasts(LiveSettingsSection.gifts, '显示直播广播与上舰提示'),
+  guardMessages(LiveSettingsSection.gifts, '大航海开通提示'),
   giftEffects(LiveSettingsSection.gifts, '播放礼物特效'),
   entryNotices(LiveSettingsSection.notifications, '显示进场通知'),
   followNotices(LiveSettingsSection.notifications, '显示关注通知'),
   shareNotices(LiveSettingsSection.notifications, '显示分享通知'),
+  globalBroadcasts(LiveSettingsSection.notifications, '全站广播'),
+  giftBroadcasts(LiveSettingsSection.notifications, '直播间广播'),
+  likeNotices(LiveSettingsSection.notifications, '点赞提示'),
+  rankNotices(LiveSettingsSection.notifications, '榜单与排名提示'),
   lotteryNotices(LiveSettingsSection.notifications, '显示红包与天选通知'),
-  roomNotices(LiveSettingsSection.notifications, '显示系统通知');
+  roomStatusNotices(LiveSettingsSection.notifications, '开播、下播与标题变更'),
+  moderationNotices(LiveSettingsSection.notifications, '房间警告与切断提示'),
+  roomNotices(LiveSettingsSection.notifications, '其他系统通知');
 
   const LiveRoomOption(this.section, this.label);
   final LiveSettingsSection section;
@@ -68,6 +74,18 @@ class LiveRoomSettings {
         final value = stored[option.name];
         if (value is bool) defaults[option.name] = value;
       }
+      // New independent switches inherit their old combined switch once, so
+      // an upgrade does not bring back categories the user had already hidden.
+      for (final (child, parent) in [
+        (LiveRoomOption.globalBroadcasts, LiveRoomOption.giftBroadcasts),
+        (LiveRoomOption.guardMessages, LiveRoomOption.giftBroadcasts),
+        (LiveRoomOption.likeNotices, LiveRoomOption.roomNotices),
+        (LiveRoomOption.rankNotices, LiveRoomOption.roomNotices),
+        (LiveRoomOption.roomStatusNotices, LiveRoomOption.roomNotices),
+        (LiveRoomOption.moderationNotices, LiveRoomOption.roomNotices),
+      ]) {
+        if (stored[child.name] is! bool) defaults[child.name] = defaults[parent.name]!;
+      }
     } else {
       // Preserve the effective behavior of the old combined blocking switches.
       final legacy = _read('liveMessageFiltersV1');
@@ -83,6 +101,8 @@ class LiveRoomSettings {
         hide('gifts', [
           LiveRoomOption.giftMessages,
           LiveRoomOption.giftBroadcasts,
+          LiveRoomOption.globalBroadcasts,
+          LiveRoomOption.guardMessages,
           LiveRoomOption.giftEffects,
         ]);
         hide('giftEffects', [LiveRoomOption.giftEffects]);
@@ -139,12 +159,25 @@ class LiveRoomSettings {
 
   /// Applied both when receiving a message and when rebuilding existing chat.
   bool allows(Object? message, {bool activityDanmaku = false}) {
-    if (message is LiveGiftMessage) return enabled(LiveRoomOption.giftMessages);
+    if (message is LiveGiftMessage) return enabled(message.guardPurchase
+        ? LiveRoomOption.guardMessages : LiveRoomOption.giftMessages);
     if (message is SuperChatItem) return enabled(LiveRoomOption.superChats);
     if (message is LiveRoomNotice) {
       if (message.entry) return enabled(LiveRoomOption.entryNotices);
       if (message.follow) return enabled(LiveRoomOption.followNotices);
       if (message.share) return enabled(LiveRoomOption.shareNotices);
+      if (message.kind case final kind?) {
+        return enabled(switch (kind) {
+          LiveNoticeKind.guard => LiveRoomOption.guardMessages,
+          LiveNoticeKind.globalBroadcast => LiveRoomOption.globalBroadcasts,
+          LiveNoticeKind.roomBroadcast => LiveRoomOption.giftBroadcasts,
+          LiveNoticeKind.like => LiveRoomOption.likeNotices,
+          LiveNoticeKind.rank => LiveRoomOption.rankNotices,
+          LiveNoticeKind.roomStatus => LiveRoomOption.roomStatusNotices,
+          LiveNoticeKind.moderation => LiveRoomOption.moderationNotices,
+          LiveNoticeKind.system => LiveRoomOption.roomNotices,
+        });
+      }
       if (message.broadcast) return enabled(LiveRoomOption.giftBroadcasts);
       if (message.lottery) return enabled(LiveRoomOption.lotteryNotices);
       return enabled(LiveRoomOption.roomNotices);

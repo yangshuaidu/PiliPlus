@@ -1,4 +1,5 @@
 import 'package:PiliPlus/pages/live_room/widgets/gift_panel.dart';
+import 'package:PiliPlus/pages/live_room/widgets/live_panel_surface.dart';
 import 'package:PiliPlus/pages/live_room/widgets/red_packet_panel.dart';
 import 'package:PiliPlus/services/live_red_packet_service.dart';
 import 'package:PiliPlus/services/live_gift_gateway.dart';
@@ -30,14 +31,9 @@ Future<void> showLiveGiftPanel(
     parentAreaId: parentAreaId,
   );
   try {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      isDismissible: false,
-      enableDrag: false,
-      constraints: const BoxConstraints(maxWidth: 600),
-      builder: (context) => LiveGiftPanel(
+    await showLivePanel<void>(
+      context,
+      (context) => LiveGiftPanel(
         service: service,
         anchorName: anchorName,
         onRecharge: () => PageUtils.launchURL(

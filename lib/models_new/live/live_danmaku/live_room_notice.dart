@@ -3,6 +3,8 @@ import 'package:PiliPlus/models_new/live/live_danmaku/live_user_badges.dart';
 import 'package:PiliPlus/models_new/live/live_danmaku/live_wire_decoder.dart';
 import 'package:html/parser.dart' as html;
 
+enum LiveNoticeKind { guard, globalBroadcast, roomBroadcast, like, roomStatus, moderation, rank, system }
+
 class LiveRoomNotice {
   const LiveRoomNotice({
     required this.text,
@@ -15,11 +17,13 @@ class LiveRoomNotice {
     this.lottery = false,
     this.badges = const LiveUserBadges(),
     this.id = '',
+    this.kind,
   });
   final String text, name, id;
   final int uid;
   final bool entry, follow, share, broadcast, lottery;
   final LiveUserBadges badges;
+  final LiveNoticeKind? kind;
   static String _plain(dynamic value) {
     if (value is! String) return '';
     final fragment = html.parseFragment(
@@ -48,6 +52,7 @@ class LiveRoomNotice {
           );
     String text = '';
     bool entry = false, follow = false, share = false;
+    LiveNoticeKind? kind;
     switch (cmd) {
       case 'INTERACT_WORD':
       case 'INTERACT_WORD_V2':
@@ -73,6 +78,7 @@ class LiveRoomNotice {
         text = badges.anonymous ? '匿名观众进入直播间' : _plain(data['copy_writing']);
       case 'USER_TOAST_MSG':
       case 'USER_TOAST_MSG_V2':
+        kind = LiveNoticeKind.guard;
         text = badges.anonymous
             ? '匿名观众开通了大航海'
             : _plain(data['toast_msg'] ?? data['toast_msg2']);
@@ -81,10 +87,19 @@ class LiveRoomNotice {
         entry = true;
         text = '进入直播间';
       case 'NOTICE_MSG':
+        // The official client compares real_roomid with the current room.
+        // Missing / different source IDs remain a global broadcast, rather
+        // than guessing its scope from the message's wording.
+        final sourceRoom = liveInt(root['real_roomid'] ?? data['real_roomid']);
+        kind = sourceRoom == roomId
+            ? LiveNoticeKind.roomBroadcast : LiveNoticeKind.globalBroadcast;
         text = _plain(
-          root['msg_common'] ?? root['msg_self'] ?? data['msg_common'],
+          sourceRoom == roomId
+              ? root['msg_self'] ?? root['msg_common'] ?? data['msg_common']
+              : root['msg_common'] ?? data['msg_common'],
         );
       case 'COMMON_NOTICE_DANMAKU':
+        kind = LiveNoticeKind.roomBroadcast;
         final segments = liveMaps(data['content_segments']);
         text = segments
             .map((s) => _plain(liveMap(s['text'])['text']))
@@ -92,12 +107,16 @@ class LiveRoomNotice {
             .join();
       case 'WARNING':
       case 'CUT_OFF':
+        kind = LiveNoticeKind.moderation;
         text = _plain(data['msg'] ?? root['msg']);
       case 'LIVE':
+        kind = LiveNoticeKind.roomStatus;
         text = '主播开始直播';
       case 'PREPARING':
+        kind = LiveNoticeKind.roomStatus;
         text = '主播已结束直播';
       case 'ROOM_CHANGE':
+        kind = LiveNoticeKind.roomStatus;
         text = '直播间标题：${_plain(data['title'])}';
       case 'ANCHOR_LOT_START':
         text = '天选开始：${_plain(data['award_name'])}';
@@ -111,13 +130,26 @@ class LiveRoomNotice {
       case 'POPULARITY_RED_POCKET_V2_WINNER_LIST':
         text = '红包结果已公布，可在“红包与天选”查看';
       case 'LIKE_INFO_V3_CLICK':
+        kind = LiveNoticeKind.like;
         text = _plain(data['like_text']);
+      case 'HOT_RANK_CHANGED':
+      case 'HOT_RANK_CHANGED_V2':
+      case 'HOT_RANK_SETTLEMENT':
+      case 'HOT_RANK_SETTLEMENT_V2':
+      case 'POPULAR_RANK_CHANGED':
+      case 'AREA_RANK_CHANGED':
+      case 'REVENUE_RANK_CHANGED':
+      case 'RANK_CHANGED':
+      case 'RANK_CHANGED_V2':
+        kind = LiveNoticeKind.rank;
+        text = _plain(data['rank_desc'] ?? data['message'] ?? data['text']);
     }
     if (text.isEmpty) return null;
     final timestamp =
         liveInt(data['timestamp'] ?? data['trigger_time']) ??
         DateTime.now().millisecondsSinceEpoch ~/ 1000;
     return LiveRoomNotice(
+      kind: kind,
       broadcast: {
         'NOTICE_MSG',
         'COMMON_NOTICE_DANMAKU',

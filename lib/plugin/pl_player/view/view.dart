@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:PiliPlus/plugin/pl_player/utils/background_playback_policy.dart';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -149,7 +150,6 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
   GestureType? _gestureType;
   Offset? _initialFocalPoint;
 
-  bool _pauseDueToPauseUponEnteringBackgroundMode = false;
 
   StreamSubscription? _brightnessListener;
   void _onBrightnessChanged(double value) {
@@ -332,19 +332,20 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!plPlayerController.continuePlayInBackground.value) {
-      late final player = plPlayerController.videoPlayerController;
-      if (const <AppLifecycleState>[.paused, .detached].contains(state)) {
-        if (player != null && player.state.playing) {
-          _pauseDueToPauseUponEnteringBackgroundMode = true;
-          player.pause();
-        }
-      } else {
-        if (_pauseDueToPauseUponEnteringBackgroundMode) {
-          _pauseDueToPauseUponEnteringBackgroundMode = false;
-          player?.play();
-        }
-      }
+    final player = plPlayerController.videoPlayerController;
+    if (player == null) return;
+    switch (plPlayerController.backgroundPlaybackPolicy.handle(
+      state,
+      continuePlayback: plPlayerController.keepPlayingInBackground,
+      playing: player.state.playing,
+      pictureInPicture: Platform.isAndroid && AndroidHelper.isPipMode,
+    )) {
+      case BackgroundPlaybackAction.pause:
+        player.pause();
+      case BackgroundPlaybackAction.resume:
+        player.play();
+      case BackgroundPlaybackAction.none:
+        break;
     }
   }
 

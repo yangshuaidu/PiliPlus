@@ -206,11 +206,11 @@ class _LiveHeaderControlState extends State<LiveHeaderControl>
           if (PlatformUtils.isMobile)
             Obx(() {
               final continuePlayInBackground =
-                  plPlayerController.continuePlayInBackground.value;
+                  plPlayerController.continueLiveInBackground.value;
               return ComBtn(
                 height: btnHeight,
                 tooltip: '${continuePlayInBackground ? '关闭' : ''}后台播放',
-                onTap: plPlayerController.setContinuePlayInBackground,
+                onTap: () => plPlayerController.setContinueLiveInBackground(!continuePlayInBackground),
                 icon: continuePlayInBackground
                     ? const Icon(
                         size: 18,

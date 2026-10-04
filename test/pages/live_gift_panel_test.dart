@@ -72,7 +72,7 @@ Map<String, dynamic> groupedCatalogue() => {
 
 List<String> visibleGiftNames(WidgetTester tester) => tester
     .widgetList<Text>(
-      find.descendant(of: find.byType(GridView), matching: find.byType(Text)),
+      find.descendant(of: find.byType(SliverGrid), matching: find.byType(Text)),
     )
     .map((text) => text.data)
     .whereType<String>()
@@ -103,12 +103,12 @@ void main() {
     (tester) async {
       transport.catalogData = groupedCatalogue();
       await openGiftPanel(tester, service);
-      expect(visibleGiftNames(tester), ['低价A', '同价B', '高价', '航海礼物', '未知价']);
+      expect(visibleGiftNames(tester), ['低价A', '同价B', '高价', '未知价']);
       await tester.tap(find.byTooltip('按电池价格排序'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('价格从高到低').last);
       await tester.pumpAndSettle();
-      expect(visibleGiftNames(tester), ['航海礼物', '高价', '低价A', '同价B', '未知价']);
+      expect(visibleGiftNames(tester), ['高价', '低价A', '同价B', '未知价']);
       expect(transport.postCount, 0);
       expect(find.text('价格未知'), findsOneWidget);
     },
@@ -133,7 +133,7 @@ void main() {
       await tester.tap(find.text('航海'));
       await tester.pumpAndSettle();
       expect(visibleGiftNames(tester), ['航海礼物']);
-      expect(find.text('暂不可送'), findsOneWidget);
+      expect(find.byTooltip('暂不可送'), findsOneWidget);
       await tester.tap(find.text('航海礼物'));
       await tester.pumpAndSettle();
       expect(find.text('需要大航海权限'), findsOneWidget);
@@ -141,7 +141,7 @@ void main() {
     },
   );
 
-  testWidgets('refresh removes a stale group and returns to all gifts', (
+  testWidgets('refresh removes a stale group and returns to the room catalogue', (
     tester,
   ) async {
     transport.catalogData = groupedCatalogue();
@@ -155,7 +155,7 @@ void main() {
     expect(find.text('测试礼物'), findsOneWidget);
     expect(find.text('互动'), findsNothing);
     expect(
-      tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '礼物')).selected,
+      tester.widget<Semantics>(find.byKey(const ValueKey('gift-tab-礼物'))).properties.selected,
       isTrue,
     );
   });

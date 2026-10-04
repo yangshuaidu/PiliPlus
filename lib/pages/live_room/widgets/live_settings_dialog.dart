@@ -1,6 +1,7 @@
 import 'package:PiliPlus/pages/live_room/controller.dart';
 import 'package:PiliPlus/pages/live_room/live_room_settings.dart';
 import 'package:PiliPlus/pages/live_room/widgets/live_settings_panel.dart';
+import 'package:PiliPlus/pages/live_room/widgets/live_panel_surface.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
@@ -13,16 +14,17 @@ Future<void> showLiveSettings(
   required VoidCallback onDisplaySettings,
   LiveSettingsSection section = LiveSettingsSection.danmaku,
 }) async {
-  final action = await showDialog<String>(
-    context: context,
-    builder: (dialogContext) => LiveSettingsPanel(
+  final action = await showLivePanel<String>(
+    context,
+    (dialogContext) => LiveSettingsPanel(
       settings: controller.settings,
       initialSection: section,
       superChatAvailable: controller.showSuperChat,
       danmakuVisibility: Obx(
-        () => SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('显示画面弹幕'),
+        () => SwitchListTile.adaptive(
+          controlAffinity: ListTileControlAffinity.trailing,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+          title: const Text('显示画面弹幕', style: TextStyle(fontSize: 14, height: 1.4)),
           subtitle: controller.plPlayerController.tempPlayerConf
               ? const Text('已启用临时播放器配置，本开关仅本次有效')
               : null,
