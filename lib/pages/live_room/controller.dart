@@ -75,6 +75,10 @@ class LiveRoomController extends GetxController {
   );
 
   final isLoaded = false.obs;
+  final playbackMessage = RxnString();
+  final portraitOverlay = RxnBool();
+  bool get usePortraitOverlay => portraitOverlay.value ?? isPortrait.value;
+  final cleanScreen = false.obs;
   final roomInfoH5 = Rxn<RoomInfoH5Data>();
 
   final liveTime = Rxn<int>();
@@ -378,6 +382,7 @@ class LiveRoomController extends GetxController {
   }
 
   Future<void> queryLiveUrl({bool autoFullScreenFlag = false}) async {
+    playbackMessage.value = null;
     currentQn ??= await ConnectivityUtils.isWiFi
         ? Pref.liveQuality
         : Pref.liveQualityCellular;
@@ -388,12 +393,13 @@ class LiveRoomController extends GetxController {
     );
     if (res case Success(:final response)) {
       if (response.liveStatus != 1) {
-        _showDialog('当前直播间未开播');
+        playbackMessage.value = '主播尚未开播';
+        await plPlayerController.pause();
         return;
       }
       final playurl = response.playurlInfo?.playurl;
       if (playurl == null) {
-        _showDialog('无法获取播放地址');
+        playbackMessage.value = '暂时无法获取播放地址';
         return;
       }
       ruid = response.uid;
@@ -416,7 +422,7 @@ class LiveRoomController extends GetxController {
       ]);
       isLoaded.value = true;
     } else {
-      _showDialog(res.toString());
+      playbackMessage.value = res.toString();
     }
   }
 
@@ -495,35 +501,6 @@ class LiveRoomController extends GetxController {
     } else {
       res.toast();
     }
-  }
-
-  void _showDialog(String title) {
-    showDialog(
-      context: Get.context!,
-      builder: (_) => AlertDialog(
-        title: Text(title),
-        actions: [
-          TextButton(
-            onPressed: Get.back,
-            child: Text(
-              '关闭',
-              style: TextStyle(color: ThemeUtils.theme.colorScheme.outline),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              if (plPlayerController.isDesktopPip) {
-                plPlayerController.exitDesktopPip();
-              }
-              Get
-                ..back()
-                ..back();
-            },
-            child: const Text('退出'),
-          ),
-        ],
-      ),
-    );
   }
 
   void scrollToBottom() {
@@ -641,6 +618,11 @@ class LiveRoomController extends GetxController {
   void updateBlockRules(List<String> keywords, Set<int> uids) {
     _keywordList = List<String>.from(keywords);
     _shieldUids = Set<int>.from(uids);
+    messages.refresh();
+  }
+
+  void addShieldUser(int uid) {
+    _shieldUids = {..._shieldUids, uid};
     messages.refresh();
   }
 
@@ -811,6 +793,13 @@ class LiveRoomController extends GetxController {
       }
       // logger.i(' 原始弹幕消息 ======> ${jsonEncode(obj)}');
       switch ('${obj['cmd']}'.split(':').first) {
+        case 'PREPARING':
+          playbackMessage.value = '主播已结束直播';
+          plPlayerController.pause();
+          break;
+        case 'LIVE':
+          queryLiveUrl();
+          break;
         case 'DANMU_MSG':
           final parsed = LiveMessageParser.danmaku(
             obj,

@@ -1,4 +1,3 @@
-import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:PiliPlus/common/style.dart';
@@ -6,24 +5,15 @@ import 'package:PiliPlus/common/widgets/draggable_sheet/dyn.dart';
 import 'package:PiliPlus/common/widgets/marquee.dart';
 import 'package:PiliPlus/models/common/video/live_quality.dart';
 import 'package:PiliPlus/pages/live_room/controller.dart';
-import 'package:PiliPlus/pages/setting/models/play_settings.dart'
-    show showPlayerVolumeDialog;
 import 'package:PiliPlus/pages/video/widgets/header_control.dart';
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
-import 'package:PiliPlus/plugin/pl_player/widgets/common_btn.dart';
-import 'package:PiliPlus/services/shutdown_timer_service.dart'
-    show shutdownTimerService;
-import 'package:PiliPlus/utils/android/bindings.g.dart';
 import 'package:PiliPlus/utils/extension/context_ext.dart';
 import 'package:PiliPlus/utils/extension/size_ext.dart';
-import 'package:PiliPlus/utils/extension/string_ext.dart';
 import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:collection/collection.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
 class LiveHeaderControl extends StatefulWidget {
@@ -37,6 +27,7 @@ class LiveHeaderControl extends StatefulWidget {
     required this.isPortrait,
     required this.liveController,
     required this.onlineWidget,
+    required this.onMore,
   });
 
   final String? title;
@@ -47,12 +38,13 @@ class LiveHeaderControl extends StatefulWidget {
   final bool isPortrait;
   final LiveRoomController liveController;
   final Widget onlineWidget;
+  final VoidCallback onMore;
 
   @override
-  State<LiveHeaderControl> createState() => _LiveHeaderControlState();
+  State<LiveHeaderControl> createState() => LiveHeaderControlState();
 }
 
-class _LiveHeaderControlState extends State<LiveHeaderControl>
+class LiveHeaderControlState extends State<LiveHeaderControl>
     with TimeBatteryMixin {
   @override
   late final plPlayerController = widget.plPlayerController;
@@ -110,198 +102,18 @@ class _LiveHeaderControlState extends State<LiveHeaderControl>
     }
     child = Expanded(child: child);
 
-    const btnHeight = 30.0;
-
-    return Padding(
-      padding: const .symmetric(horizontal: 14, vertical: 13),
-      child: Row(
-        children: [
-          if (isFullScreen || plPlayerController.isDesktopPip)
-            ComBtn(
-              height: btnHeight,
-              tooltip: '返回',
-              icon: const Icon(FontAwesomeIcons.arrowLeft, size: 15),
-              onTap: () {
-                if (plPlayerController.isDesktopPip) {
-                  plPlayerController.exitDesktopPip();
-                } else {
-                  plPlayerController.triggerFullScreen(status: false);
-                }
-              },
-            ),
-          child,
-          ...?timeBatteryWidgets,
-          const SizedBox(width: 10),
-          if (PlatformUtils.isDesktop && !plPlayerController.isDesktopPip)
-            Obx(() {
-              final isAlwaysOnTop = plPlayerController.isAlwaysOnTop.value;
-              return ComBtn(
-                height: btnHeight,
-                tooltip: '${isAlwaysOnTop ? '取消' : ''}置顶',
-                icon: isAlwaysOnTop
-                    ? const Icon(
-                        size: 18,
-                        Icons.push_pin,
-                        color: Colors.white,
-                      )
-                    : const Icon(
-                        size: 18,
-                        Icons.push_pin_outlined,
-                        color: Colors.white,
-                      ),
-                onTap: () => plPlayerController.setAlwaysOnTop(!isAlwaysOnTop),
-              );
-            }),
-          if (isFullScreen || PlatformUtils.isDesktop)
-            ComBtn(
-              height: btnHeight,
-              tooltip: '发弹幕',
-              icon: const Icon(
-                size: 18,
-                Icons.comment_outlined,
-                color: Colors.white,
-              ),
-              onTap: widget.onSendDanmaku,
-            ),
-          if (Platform.isAndroid || (PlatformUtils.isDesktop && !isFullScreen))
-            ComBtn(
-              height: btnHeight,
-              tooltip: '画中画',
-              onTap: () {
-                if (PlatformUtils.isDesktop) {
-                  plPlayerController.toggleDesktopPip();
-                  return;
-                }
-                if (AndroidHelper.isPipAvailable) {
-                  plPlayerController.enterPip();
-                }
-              },
-              icon: const Icon(
-                size: 18,
-                Icons.picture_in_picture_outlined,
-                color: Colors.white,
-              ),
-            ),
-          Obx(
-            () => ComBtn(
-              height: btnHeight,
-              tooltip: '仅播放音频',
-              onTap: () {
-                plPlayerController.onlyPlayAudio.toggle();
-                widget.onPlayAudio();
-              },
-              icon: plPlayerController.onlyPlayAudio.value
-                  ? const Icon(
-                      size: 18,
-                      MdiIcons.musicCircle,
-                      color: Colors.white,
-                    )
-                  : const Icon(
-                      size: 18,
-                      MdiIcons.musicCircleOutline,
-                      color: Colors.white,
-                    ),
-            ),
-          ),
-          if (PlatformUtils.isMobile)
-            Obx(() {
-              final continuePlayInBackground =
-                  plPlayerController.continueLiveInBackground.value;
-              return ComBtn(
-                height: btnHeight,
-                tooltip: '${continuePlayInBackground ? '关闭' : ''}后台播放',
-                onTap: () => plPlayerController.setContinueLiveInBackground(
-                  !continuePlayInBackground,
-                ),
-                icon: continuePlayInBackground
-                    ? const Icon(
-                        size: 18,
-                        Icons.play_circle,
-                        color: Colors.white,
-                      )
-                    : const Icon(
-                        size: 18,
-                        Icons.play_circle_outline,
-                        color: Colors.white,
-                      ),
-              );
-            }),
-          ComBtn(
-            height: btnHeight,
-            tooltip: '定时关闭',
-            onTap: () => shutdownTimerService.showScheduleExitDialog(
-              context,
-              isFullScreen: isFullScreen,
-              isLive: true,
-            ),
-            icon: const Icon(
-              size: 18,
-              Icons.schedule,
-              color: Colors.white,
-            ),
-          ),
-          if (plPlayerController.videoPlayerController case final player?)
-            SizedBox.square(
-              dimension: 30,
-              child: PopupMenuButton(
-                iconSize: 18,
-                padding: .zero,
-                iconColor: Colors.white,
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    height: 35,
-                    onTap: _showLiveStreamDialog,
-                    child: const Row(
-                      spacing: 8,
-                      children: [
-                        Icon(Icons.alt_route, size: 17),
-                        Text('切换路线', style: TextStyle(fontSize: 14)),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    height: 35,
-                    child: const Row(
-                      spacing: 8,
-                      children: [
-                        Icon(Icons.info_outline, size: 17),
-                        Text('播放信息', style: TextStyle(fontSize: 14)),
-                      ],
-                    ),
-                    onTap: () => HeaderControlState.showPlayerInfo(
-                      context,
-                      player: player,
-                    ),
-                  ),
-                  if (PlatformUtils.isMobile)
-                    PopupMenuItem(
-                      height: 35,
-                      child: Row(
-                        spacing: 8,
-                        children: [
-                          const Icon(Icons.volume_up, size: 17),
-                          Text(
-                            '播放器音量: ${player.getProperty('volume').subLength(3)}%',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ],
-                      ),
-                      onTap: () => showPlayerVolumeDialog(
-                        context,
-                        () {},
-                        onChanged: player.setVolume,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
+    if (!isFullScreen && !plPlayerController.isDesktopPip) return const SizedBox.shrink();
+    return Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), child: Row(children: [
+      IconButton(tooltip: '返回', onPressed: () {
+        if (plPlayerController.isDesktopPip) { plPlayerController.exitDesktopPip(); }
+        else { plPlayerController.triggerFullScreen(status: false); }
+      }, icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22)),
+      child, ...?timeBatteryWidgets,
+      IconButton(tooltip: '更多', onPressed: widget.onMore, icon: const Icon(Icons.more_horiz, color: Colors.white)),
+    ]));
   }
 
-  void _showLiveStreamDialog() {
-    final controller = widget.liveController;
+  static void showStream(BuildContext context, LiveRoomController controller) {
     showModalBottomSheet(
       context: context,
       useSafeArea: true,

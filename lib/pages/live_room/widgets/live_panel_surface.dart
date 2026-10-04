@@ -25,7 +25,8 @@ Size livePanelSize(MediaQueryData media) {
 Future<T?> showLivePanel<T>(BuildContext context, WidgetBuilder builder) =>
     showGeneralDialog<T>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
+      barrierLabel: '关闭面板',
       barrierColor: Colors.black.withValues(alpha: .12),
       transitionDuration: const Duration(milliseconds: 220),
       pageBuilder: (context, _, _) {

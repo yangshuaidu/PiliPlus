@@ -25,10 +25,16 @@ class LiveUserBadges {
     this.medalColor = '',
     this.nameColor = '',
     this.anonymous = false,
+    this.medalAnchorUid = 0,
+    this.medalRoomId = 0,
+    this.medalAnchorName = '',
+    this.titleId = '',
   });
   final int rank, wealth, guard, medalLevel;
   final bool manager, anonymous;
   final String title, titleImage, medalName, medalColor, nameColor;
+  final int medalAnchorUid, medalRoomId;
+  final String medalAnchorName, titleId;
   static dynamic _at(dynamic list, int index) =>
       list is List && index < list.length ? list[index] : null;
   factory LiveUserBadges.parse(
@@ -86,6 +92,10 @@ class LiveUserBadges {
           0,
       manager: liveBool(data['isadmin'] ?? _at(_at(info, 2), 2)) == true,
       title: titleName,
+      titleId: titleValue,
+      medalAnchorUid: liveInt(medal['ruid'] ?? medal['target_id'] ?? _at(oldMedal, 12)) ?? 0,
+      medalRoomId: liveInt(medal['room_id'] ?? medal['anchor_roomid'] ?? _at(oldMedal, 3)) ?? 0,
+      medalAnchorName: '${medal['anchor_uname'] ?? _at(oldMedal, 2) ?? ''}',
       titleImage: liveAssetUrl(title['url'] ?? title['image']),
       medalName: light == 0
           ? ''

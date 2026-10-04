@@ -27,6 +27,7 @@ flutter test --no-pub --concurrency=1 `
     test/pages/live_settings_test.dart `
     test/pages/live_background_playback_test.dart `
     test/pages/live_mobile_layout_test.dart `
+    test/pages/live_user_panel_test.dart `
     test/services/live_room_actions_test.dart `
     test/services/live_superchat_service_test.dart
 exit $LASTEXITCODE

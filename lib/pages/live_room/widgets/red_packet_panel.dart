@@ -1,3 +1,4 @@
+import 'package:PiliPlus/pages/live_room/widgets/live_panel_surface.dart';
 import 'package:PiliPlus/models_new/live/gift/live_red_packet.dart';
 import 'package:PiliPlus/services/live_gift_service.dart';
 import 'package:PiliPlus/services/live_red_packet_service.dart';
@@ -43,6 +44,9 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
       _busy = true;
       _config = null;
       _package = null;
+      _message = null;
+      _duration = _count = _requirement = null;
+      _danmaku = null;
     });
     try {
       final identity = widget.service.gifts.currentAccount().identity;
@@ -287,10 +291,8 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
         (_count != null && _requirement != null);
     return PopScope(
       canPop: !_busy,
-      child: SafeArea(
-        top: false,
+      child: LivePanelSurface(
         child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.8,
           child: Column(
             children: [
               Row(

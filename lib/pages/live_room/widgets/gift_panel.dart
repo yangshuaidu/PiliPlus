@@ -561,6 +561,22 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
   Widget _footer() {
     final selected = _selected;
     final count = int.tryParse(_quantity.text) ?? 0;
+    final bag = _bagItem;
+    final allowed = selected?.allowedQuantities;
+    final unavailable = selected == null
+        ? '请选择礼物'
+        : !(bag?.available ?? selected.sendable)
+        ? selected.unavailableReason ?? '当前礼物暂不可赠送'
+        : count < 1 || count > selected.maxQuantity
+        ? '请输入 1–${selected.maxQuantity} 的整数数量'
+        : allowed != null && !allowed.contains(count)
+        ? '请选择支持的赠送数量'
+        : bag != null && count > bag.quantity
+        ? '包裹数量不足'
+        : bag == null && selected.coinType == 'gold' &&
+            (_snapshot?.wallet.gold == null || selected.price * count > _snapshot!.wallet.gold!)
+        ? '余额不足或暂时无法核验余额'
+        : null;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
       child: Column(
@@ -568,7 +584,7 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
         children: [
           if (selected != null)
             Text(
-              '${selected.name} · ${_bagItem == null ? '合计 ${liveBatteryAmount(selected.price * count)} 电池' : '消耗 $count 个包裹礼物'}',
+              unavailable ?? '${selected.name} · ${_bagItem == null ? '合计 ${liveBatteryAmount(selected.price * count)} 电池' : '消耗 $count 个包裹礼物'}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -635,7 +651,7 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
               ),
               const SizedBox(width: 8),
               FilledButton(
-                onPressed: _busy || selected == null || _pending != null
+                onPressed: _busy || unavailable != null || _pending != null
                     ? null
                     : _send,
                 style: FilledButton.styleFrom(

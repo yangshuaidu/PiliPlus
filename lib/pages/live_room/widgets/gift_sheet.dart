@@ -15,6 +15,7 @@ Future<void> showLiveGiftPanel(
   required String anchorName,
   int? areaId,
   int? parentAreaId,
+  bool redPacket = false,
 }) async {
   if (!Accounts.main.isLogin) {
     SmartDialog.showToast('请先登录后再送礼');
@@ -30,6 +31,12 @@ Future<void> showLiveGiftPanel(
     areaId: areaId,
     parentAreaId: parentAreaId,
   );
+  if (redPacket) {
+    final red = LiveRedPacketService(service);
+    try { await showLivePanel<void>(context, (_) => LiveRedPacketPanel(service: red, anchorName: anchorName)); }
+    finally { red.dispose(); service.dispose(); }
+    return;
+  }
   try {
     await showLivePanel<void>(
       context,
@@ -42,18 +49,7 @@ Future<void> showLiveGiftPanel(
         onRedPacket: () async {
           final redPackets = LiveRedPacketService(service);
           try {
-            await showModalBottomSheet<void>(
-              context: context,
-              isScrollControlled: true,
-              useSafeArea: true,
-              isDismissible: false,
-              enableDrag: false,
-              constraints: const BoxConstraints(maxWidth: 600),
-              builder: (_) => LiveRedPacketPanel(
-                service: redPackets,
-                anchorName: anchorName,
-              ),
-            );
+            await showLivePanel<void>(context, (_) => LiveRedPacketPanel(service: redPackets, anchorName: anchorName));
           } finally {
             redPackets.dispose();
           }

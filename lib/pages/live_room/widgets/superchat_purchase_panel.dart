@@ -1,3 +1,4 @@
+import 'package:PiliPlus/pages/live_room/widgets/live_panel_surface.dart';
 import 'package:PiliPlus/models_new/live/live_superchat/purchase.dart';
 import 'package:PiliPlus/services/live_gift_gateway.dart';
 import 'package:PiliPlus/services/live_gift_service.dart';
@@ -32,16 +33,7 @@ Future<void> showLiveSuperChatPurchase(
   );
   final service = LiveSuperChatService(gifts);
   try {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      isDismissible: false,
-      enableDrag: false,
-      constraints: const BoxConstraints(maxWidth: 600),
-      builder: (_) =>
-          LiveSuperChatPurchasePanel(service: service, anchorName: anchorName),
-    );
+    await showLivePanel<void>(context, (_) => LiveSuperChatPurchasePanel(service: service, anchorName: anchorName));
   } finally {
     service.dispose();
     gifts.dispose();
@@ -331,13 +323,10 @@ class _LiveSuperChatPurchasePanelState
   @override
   Widget build(BuildContext context) {
     final config = _config, tier = _tier;
-    final media = MediaQuery.of(context);
     return PopScope(
       canPop: !_busy,
-      child: Padding(
-        padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+      child: LivePanelSurface(
         child: SizedBox(
-          height: (media.size.height - media.viewInsets.bottom) * .9,
           child: Column(
             children: [
               Padding(

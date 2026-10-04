@@ -1,11 +1,10 @@
+import 'package:PiliPlus/pages/live_room/widgets/live_user_panel.dart';
 import 'package:PiliPlus/common/widgets/badge.dart';
 import 'package:PiliPlus/common/widgets/flutter/live_list_view.dart';
-import 'package:PiliPlus/common/widgets/flutter/popup_menu.dart';
 import 'package:PiliPlus/common/widgets/gesture/tap_gesture_recognizer.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/scroll_physics.dart'
     show platformClampingPhysics;
-import 'package:PiliPlus/http/live.dart';
 import 'package:PiliPlus/models_new/live/live_danmaku/danmaku_msg.dart';
 import 'package:PiliPlus/models_new/live/live_danmaku/live_message_parser.dart';
 import 'package:PiliPlus/models_new/live/live_danmaku/live_room_notice.dart';
@@ -17,11 +16,9 @@ import 'package:PiliPlus/pages/live_room/controller.dart';
 import 'package:PiliPlus/pages/live_room/live_room_settings.dart';
 import 'package:PiliPlus/pages/live_room/superchat/superchat_card.dart';
 import 'package:PiliPlus/pages/member/widget/medal_widget.dart';
-import 'package:PiliPlus/pages/video/widgets/header_control.dart';
 import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -40,12 +37,11 @@ class LiveRoomChatPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     late final bg = isPP
-        ? Colors.black.withValues(alpha: 0.4)
-        : const Color(0x15FFFFFF);
+        ? Colors.black.withValues(alpha: 0.36)
+        : Colors.transparent;
     late final nameColor = isPP
         ? Colors.white.withValues(alpha: 0.9)
         : Colors.white.withValues(alpha: 0.6);
-    late final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
     late final colorScheme = ColorScheme.of(context);
     late final primary = colorScheme.isDark
         ? colorScheme.primary
@@ -64,7 +60,7 @@ class LiveRoomChatPanel extends StatelessWidget {
               initialIndex: liveRoomController.trimDmIndex * 2,
               padding: const .symmetric(horizontal: 12),
               controller: liveRoomController.scrollController,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              separatorBuilder: (_, _) => const SizedBox(height: 4),
               itemCount: liveRoomController.builtLength =
                   liveRoomController.messages.length,
               physics: platformClampingPhysics,
@@ -183,9 +179,13 @@ class LiveRoomChatPanel extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: Builder(
                       builder: (itemContext) {
-                        return Container(
+                        return GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _openMessage(context, item),
+                          child: Container(
+                          constraints: const BoxConstraints(minHeight: 40),
                           padding: const .symmetric(
-                            horizontal: 10,
+                            horizontal: isPP ? 8 : 0,
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
@@ -193,9 +193,10 @@ class LiveRoomChatPanel extends StatelessWidget {
                             borderRadius: const .all(.circular(14)),
                           ),
                           child: Text.rich(
+                            style: const TextStyle(fontSize: 15, height: 1.4, color: Colors.white),
                             TextSpan(
                               children: [
-                                if (showBadges) ...liveBadgeSpans(item.badges),
+                                if (showBadges) ...liveBadgeSpans(item.badges, onTap: () => _openMessage(context, item, profile: true)),
                                 if (item.extra.mid == liveRoomController.ruid)
                                   const WidgetSpan(
                                     child: Padding(
@@ -214,24 +215,19 @@ class LiveRoomChatPanel extends StatelessWidget {
                                     color:
                                         liveNameColor(item.badges.nameColor) ??
                                         nameColor,
-                                    fontSize: 14,
+                                    fontSize: 15,
                                   ),
                                   recognizer: item.extra.mid == 0
                                       ? null
                                       : (NoDeadlineTapGestureRecognizer()
-                                          ..onTapUp = (e) => _showMsgMenu(
-                                            context,
-                                            itemContext,
-                                            e,
-                                            item,
-                                          )),
+                                          ..onTap = () => _openMessage(context, item, profile: true)),
                                 ),
                                 if (item.reply case final reply?)
                                   TextSpan(
                                     text: '@${reply.name} ',
                                     style: TextStyle(
                                       color: primary,
-                                      fontSize: 14,
+                                      fontSize: 15,
                                     ),
                                     recognizer: (reply.mid ?? 0) <= 0
                                         ? null
@@ -240,11 +236,11 @@ class LiveRoomChatPanel extends StatelessWidget {
                                               '/member?mid=${reply.mid}',
                                             )),
                                   ),
-                                _buildMsg(devicePixelRatio, item),
+                                _buildMsg(item),
                               ],
                             ),
                           ),
-                        );
+                        ));
                       },
                     ),
                   );
@@ -441,17 +437,13 @@ class LiveRoomChatPanel extends StatelessWidget {
     );
   }
 
-  InlineSpan _buildMsg(double devicePixelRatio, DanmakuMsg obj) {
+  InlineSpan _buildMsg(DanmakuMsg obj) {
     final uemote = obj.uemote;
     if (uemote != null) {
       // "room_{{room_id}}_{{int}}" , "upower_[{{emote}}]" , "official_{{int}}"
-      final double width, height;
-      if (uemote.isOfficial) {
-        width = uemote.width / devicePixelRatio;
-        height = uemote.height / devicePixelRatio;
-      } else {
-        width = height = 162.0 / devicePixelRatio;
-      }
+      final height = uemote.isOfficial ? 32.0 : 48.0;
+      final ratio = uemote.height > 0 ? uemote.width / uemote.height : 1.0;
+      final width = (height * ratio).clamp(24.0, 128.0).toDouble();
       return WidgetSpan(
         child: NetworkImgLayer(
           src: uemote.url,
@@ -475,8 +467,8 @@ class LiveRoomChatPanel extends StatelessWidget {
               child: NetworkImgLayer(
                 src: emote.url,
                 type: .emote,
-                width: emote.width,
-                height: emote.height,
+                width: emote.height > 0 ? (28.0 * emote.width / emote.height).clamp(16.0, 84.0).toDouble() : 28,
+                height: 28,
               ),
             ),
           );
@@ -488,7 +480,7 @@ class LiveRoomChatPanel extends StatelessWidget {
               text: nonMatchStr,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: 15,
               ),
             ),
           );
@@ -501,90 +493,20 @@ class LiveRoomChatPanel extends StatelessWidget {
         text: obj.text,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 14,
+          fontSize: 15,
         ),
       );
     }
   }
 
-  void _showMsgMenu(
-    BuildContext context,
-    BuildContext itemContext,
-    TapUpDetails details,
-    DanmakuMsg item,
-  ) {
-    final dx = details.globalPosition.dx;
-    final renderBox = itemContext.findRenderObject() as RenderBox;
-    final dy =
-        details.globalPosition.dy -
-        details.localPosition.dy +
-        renderBox.size.height -
-        4; // padding
-    final autoScroll =
-        liveRoomController.autoScroll &&
-        !liveRoomController.disableAutoScroll.value;
-    if (autoScroll) {
-      liveRoomController.autoScroll = false;
+  Future<void> _openMessage(BuildContext context, DanmakuMsg item, {bool profile = false}) async {
+    final autoScroll = liveRoomController.autoScroll && !liveRoomController.disableAutoScroll.value;
+    if (autoScroll) liveRoomController.autoScroll = false;
+    try {
+      if (profile) { await showLiveUserPanel(context, liveRoomController, item); }
+      else { await showLiveMessageActions(context, liveRoomController, item); }
+    } finally {
+      if (autoScroll && context.mounted) { liveRoomController..autoScroll = true..scrollToBottom(); }
     }
-    showMenu(
-      context: context,
-      position: RelativeRect.fromLTRB(dx, dy, dx, 0),
-      items: <PopupMenuEntry<Never>>[
-        CustomPopupMenuItem(
-          height: 38,
-          child: Text(item.name, style: const TextStyle(fontSize: 13)),
-        ),
-        const CustomPopupMenuDivider(height: 1),
-        PopupMenuItem(
-          height: 38,
-          onTap: () => Utils.copyText(Utils.jsonEncoder.convert(item.toJson())),
-          child: const Text('复制弹幕信息', style: TextStyle(fontSize: 13)),
-        ),
-        PopupMenuItem(
-          height: 38,
-          onTap: () => Get.toNamed('/member?mid=${item.extra.mid}'),
-          child: const Text('去TA的个人空间', style: TextStyle(fontSize: 13)),
-        ),
-        if (liveRoomController.isLogin) ...[
-          PopupMenuItem(
-            height: 38,
-            onTap: () => liveRoomController.onAtUser(item),
-            child: const Text('@TA', style: TextStyle(fontSize: 13)),
-          ),
-          PopupMenuItem(
-            height: 38,
-            onTap: () async {
-              final res = await LiveHttp.liveShieldUser(
-                uid: item.extra.mid,
-                roomid: liveRoomController.roomId,
-                type: 1,
-              );
-              if (res.isSuccess) {
-                SmartDialog.showToast('屏蔽成功');
-              } else {
-                res.toast();
-              }
-            },
-            child: const Text('屏蔽发送者', style: TextStyle(fontSize: 13)),
-          ),
-          PopupMenuItem(
-            height: 38,
-            onTap: () => HeaderControl.reportLiveDanmaku(
-              context,
-              roomId: liveRoomController.roomId,
-              msg: item.text,
-              extra: item.extra,
-            ),
-            child: const Text('举报选中弹幕', style: TextStyle(fontSize: 13)),
-          ),
-        ],
-      ],
-    ).whenComplete(() {
-      if (autoScroll && context.mounted) {
-        liveRoomController
-          ..autoScroll = true
-          ..scrollToBottom();
-      }
-    });
   }
 }

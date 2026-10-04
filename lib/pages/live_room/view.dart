@@ -1,3 +1,10 @@
+import 'package:PiliPlus/pages/live_room/widgets/live_action_menu.dart';
+import 'package:PiliPlus/pages/live_room/widgets/live_panel_surface.dart';
+import 'package:PiliPlus/pages/live_room/widgets/superchat_purchase_panel.dart';
+import 'package:PiliPlus/plugin/pl_player/models/video_fit_type.dart';
+import 'package:PiliPlus/services/shutdown_timer_service.dart' show shutdownTimerService;
+import 'package:PiliPlus/pages/setting/models/play_settings.dart' show showPlayerVolumeDialog;
+import 'package:PiliPlus/pages/video/widgets/header_control.dart' show HeaderControlState;
 import 'package:PiliPlus/pages/live_room/widgets/live_settings_dialog.dart';
 import 'package:PiliPlus/pages/live_room/live_room_settings.dart';
 import 'package:PiliPlus/pages/video/widgets/header_mixin.dart';
@@ -266,6 +273,16 @@ class _LiveRoomPageState extends State<LiveRoomPage>
     Widget player = Obx(
       key: playerKey,
       () {
+        final message = _liveRoomController.playbackMessage.value;
+        if (message != null) {
+          return ColoredBox(color: const Color(0xFF191A21), child: Center(child: Padding(
+            padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.live_tv_outlined, color: Colors.white54, size: 38),
+              const SizedBox(height: 12), Text(message, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 15)),
+              const SizedBox(height: 8), TextButton.icon(onPressed: _liveRoomController.queryLiveUrl, icon: const Icon(Icons.refresh, size: 18), label: const Text('刷新')),
+            ]),
+          )));
+        }
         if (_liveRoomController.isLoaded.value && plPlayerController.isLive) {
           final roomInfoH5 = _liveRoomController.roomInfoH5.value;
           return PLVideoPlayer(
@@ -284,11 +301,13 @@ class _LiveRoomPageState extends State<LiveRoomPage>
               isPortrait: isPortrait,
               liveController: _liveRoomController,
               onlineWidget: onlineWidget,
+              onMore: _showMore,
             ),
             bottomControl: BottomControl(
               plPlayerController: plPlayerController,
               liveRoomCtr: _liveRoomController,
-              onRefresh: _liveRoomController.queryLiveUrl,
+              onMore: _showMore,
+              onQuality: _showQuality,
             ),
             danmuWidget: !needDm
                 ? null
@@ -466,14 +485,20 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                 );
               },
             ),
-          ScaffoldLayout(
+          if (isPortrait && _liveRoomController.usePortraitOverlay && !isFullScreen)
+            Positioned.fill(child: Stack(children: [
+              Positioned.fill(child: _buildPP(false)),
+              Positioned(top: 0, left: 0, right: 0, child: Obx(() => _liveRoomController.cleanScreen.value
+                ? const SizedBox.shrink() : SizedBox(height: padding.top + kToolbarHeight, child: _buildAppBar(false)))),
+            ]))
+          else ScaffoldLayout(
             appBar: isWindowMode && isFullScreen && !isPortrait
                 ? null
                 : _buildAppBar(isFullScreen),
             body: isPortrait
                 ? Obx(
                     () {
-                      if (_liveRoomController.isPortrait.value) {
+                      if (_liveRoomController.usePortraitOverlay) {
                         return _buildPP(isFullScreen);
                       }
                       return _buildPH(isFullScreen);
@@ -515,47 +540,30 @@ class _LiveRoomPageState extends State<LiveRoomPage>
     );
   }
 
-  Widget _buildPP(bool isFullScreen) {
-    final bottomHeight = 70 + padding.bottom;
-    final videoHeight = isFullScreen
-        ? maxHeight - (isWindowMode && !isPortrait ? 0 : padding.top)
-        : maxHeight - bottomHeight;
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Positioned.fill(
-          bottom: isFullScreen ? 0 : bottomHeight,
-          child: videoPlayerPanel(
-            width: maxWidth,
-            height: videoHeight,
-            isFullScreen,
-            needDm: isFullScreen,
-            alignment: isFullScreen ? Alignment.center : Alignment.topCenter,
-          ),
-        ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 55 + bottomHeight,
-          height: maxHeight * 0.32,
-          child: Offstage(
-            offstage: isFullScreen,
-            child: _buildChatWidget(true),
-          ),
-        ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: bottomHeight,
-          child: Offstage(
-            offstage: isFullScreen,
-            child: _buildInputWidget,
-          ),
-        ),
+  Widget _buildPP(bool isFullScreen) => LayoutBuilder(builder: (context, constraints) {
+    final height = constraints.maxHeight;
+    final bottomHeight = 60.0 + padding.bottom;
+    return Stack(children: [
+      Positioned.fill(child: videoPlayerPanel(isFullScreen, width: constraints.maxWidth,
+        height: height, needDm: isFullScreen, alignment: Alignment.center)),
+      if (!isFullScreen) ...[
+        const Positioned.fill(child: IgnorePointer(child: DecoratedBox(decoration: BoxDecoration(
+          gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
+            colors: [Color(0x66000000), Colors.transparent, Colors.transparent, Color(0x99000000)], stops: [0, .25, .5, 1]),
+        )))),
+        Obx(() => _liveRoomController.cleanScreen.value ? const SizedBox.shrink() : Positioned(
+          left: 0, right: 58, bottom: bottomHeight + 8, height: height * .29, child: _buildChatWidget(true))),
+        Obx(() => _liveRoomController.cleanScreen.value ? const SizedBox.shrink() : Positioned(
+          left: 0, right: 0, bottom: 0, height: bottomHeight, child: _buildInputWidget)),
+        Obx(() => Positioned(right: 10, bottom: _liveRoomController.cleanScreen.value ? padding.bottom + 12 : bottomHeight + 10,
+          child: Material(color: Colors.black45, shape: const CircleBorder(), child: IconButton(
+            tooltip: _liveRoomController.cleanScreen.value ? '退出清屏' : '清屏',
+            icon: Icon(_liveRoomController.cleanScreen.value ? Icons.fullscreen_exit : Icons.fullscreen, color: Colors.white),
+            onPressed: _liveRoomController.cleanScreen.toggle,
+          )))),
       ],
-    );
-  }
+    ]);
+  });
 
   Widget get onlineWidget => GestureDetector(
     onTap: _showRank,
@@ -602,60 +610,112 @@ class _LiveRoomPageState extends State<LiveRoomPage>
   );
 
   void _showRank() {
-    if (_liveRoomController.ruid case final ruid?) {
-      final heightFactor = PlatformUtils.isMobile && !isPortrait ? 1.0 : 0.7;
-      showModalBottomSheet(
-        context: context,
-        useSafeArea: true,
-        clipBehavior: .hardEdge,
-        isScrollControlled: true,
-        constraints: const BoxConstraints(maxWidth: 450),
-        builder: (context) => FractionallySizedBox(
-          widthFactor: 1.0,
-          heightFactor: heightFactor,
-          child: DefaultTabController(
-            length: 2,
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: TabBar(
-                        tabs: [
-                          Tab(text: '高能观众'),
-                          Tab(text: '大航海'),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: '关闭',
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      ContributionRankPanel(
-                        ruid: ruid,
-                        roomId: _liveRoomController.roomId,
-                      ),
-                      LiveGuardRankPanel(
-                        roomId: _liveRoomController.roomId,
-                        ruid: ruid,
-                        embedded: true,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+    final live = _liveRoomController;
+    if (live.ruid case final ruid?) {
+      showLivePanel<void>(context, (context) => LivePanelSurface(child: DefaultTabController(length: 2, child: Column(children: [
+        const LiveSheetHeading(title: '房间观众'),
+        const TabBar(tabs: [Tab(text: '房间观众'), Tab(text: '大航海')]),
+        Expanded(child: TabBarView(children: [
+          ContributionRankPanel(ruid: ruid, roomId: live.roomId),
+          ColoredBox(color: const Color(0xFF202536), child: LiveGuardRankPanel(roomId: live.roomId, ruid: ruid, embedded: true)),
+        ])),
+      ]))));
     }
   }
+
+  void _showMore() {
+    final live = _liveRoomController;
+    final url = 'https://live.bilibili.com/${live.roomId}';
+    showLiveActionMenu(context, title: '更多', sharing: [
+      if (PlatformUtils.isMobile) LiveMenuAction('分享直播', Icons.share_outlined, () => ShareUtils.shareText(url)),
+      LiveMenuAction('复制链接', Icons.link, () => Utils.copyText(url)),
+      LiveMenuAction('浏览器打开', Icons.open_in_browser, () => PageUtils.inAppWebview(url, off: true)),
+      if (live.roomInfoH5.value?.roomInfo case final room?)
+        LiveMenuAction('分享至消息', Icons.forward_to_inbox_outlined, () => PageUtils.pmShare(context, content: {
+          'cover': room.cover ?? '', 'sourceID': live.roomId.toString(),
+          'title': room.title ?? '', 'url': url, 'authorID': room.uid.toString(),
+          'source': '直播', 'desc': room.title ?? '',
+          'author': live.roomInfoH5.value?.anchorInfo?.baseInfo?.uname ?? '',
+        })),
+    ], actions: [
+      LiveMenuAction('刷新', Icons.refresh, live.queryLiveUrl),
+      LiveMenuAction('播放设置', Icons.tune, _showPlaybackSettings),
+      LiveMenuAction('清晰度', Icons.high_quality_outlined, _showQuality),
+      LiveMenuAction(live.usePortraitOverlay ? '分区观看' : '竖屏全屏', Icons.stay_current_portrait, () {
+        live.portraitOverlay.value = !live.usePortraitOverlay; live.cleanScreen.value = false;
+      }),
+      for (final section in LiveSettingsSection.values)
+        LiveMenuAction(section.title, switch (section) {
+          LiveSettingsSection.danmaku => Icons.chat_bubble_outline,
+          LiveSettingsSection.gifts => Icons.auto_awesome_outlined,
+          LiveSettingsSection.notifications => Icons.notifications_outlined,
+        }, () => showLiveSettings(context, live, section: section, onDisplaySettings: () => showSetDanmaku(isLive: true))),
+      LiveMenuAction('礼物', Icons.card_giftcard_outlined, _showGifts),
+      LiveMenuAction('发红包', Icons.redeem, () => _showGifts(redPacket: true)),
+      LiveMenuAction('醒目留言', Icons.chat_outlined, () => showLiveSuperChatPurchase(context,
+        roomId: live.roomId, anchorUid: live.ruid,
+        anchorName: live.roomInfoH5.value?.anchorInfo?.baseInfo?.uname ?? '当前主播',
+        areaId: live.roomInfoH5.value?.roomInfo?.areaId,
+        parentAreaId: live.roomInfoH5.value?.roomInfo?.parentAreaId)),
+      LiveMenuAction('红包与天选', Icons.celebration_outlined, () => showLiveActivities(context, live.roomFeatures, live.ruid ?? 0)),
+      LiveMenuAction('观众与大航海', Icons.groups_outlined, _showRank),
+    ]);
+  }
+
+  void _showGifts({bool redPacket = false}) {
+    final live = _liveRoomController;
+    showLiveGiftPanel(context, roomId: live.roomId, anchorUid: live.ruid,
+      anchorName: live.roomInfoH5.value?.anchorInfo?.baseInfo?.uname ?? '当前主播',
+      areaId: live.roomInfoH5.value?.roomInfo?.areaId,
+      parentAreaId: live.roomInfoH5.value?.roomInfo?.parentAreaId,
+      redPacket: redPacket);
+  }
+
+  void _showQuality() => showLivePanel<void>(context, (context) => LivePanelSurface(
+    child: Column(children: [const LiveSheetHeading(title: '清晰度'), Expanded(child: ListView(children: [
+      for (final quality in _liveRoomController.acceptQnList)
+        ListTile(title: Text(quality.desc), trailing: quality.code == _liveRoomController.currentQn ? const Icon(Icons.check, color: liveAccent) : null,
+          onTap: () { Navigator.pop(context); _liveRoomController.changeQn(quality.code); }),
+    ]))]),
+  ));
+
+  void _showPlaybackSettings() => showLivePanel<void>(context, (sheetContext) => LivePanelSurface(
+    child: Column(children: [const LiveSheetHeading(title: '播放设置'), Expanded(child: ListView(children: [
+      Obx(() => SwitchListTile.adaptive(title: const Text('后台播放'), subtitle: const Text('切换应用或锁屏后继续听直播'),
+        value: plPlayerController.continueLiveInBackground.value, onChanged: plPlayerController.setContinueLiveInBackground)),
+      Obx(() => SwitchListTile.adaptive(title: const Text('仅播放音频'), value: plPlayerController.onlyPlayAudio.value,
+        onChanged: (value) { plPlayerController.onlyPlayAudio.value = value; _liveRoomController.queryLiveUrl(); })),
+      ListTile(title: const Text('清晰度'), trailing: Obx(() => Text(_liveRoomController.currentQnDesc.value)),
+        onTap: () { Navigator.pop(sheetContext); _showQuality(); }),
+      ExpansionTile(title: const Text('画面比例'), children: [for (final fit in VideoFitType.values)
+        Obx(() => RadioListTile<VideoFitType>(title: Text(fit.desc), value: fit, groupValue: plPlayerController.videoFit.value,
+          onChanged: (value) { if (value != null) plPlayerController.toggleVideoFit(value); }))]),
+      if (_liveRoomController.isLoaded.value)
+        ListTile(leading: const Icon(Icons.alt_route), title: const Text('切换播放线路'),
+          onTap: () { Navigator.pop(sheetContext); LiveHeaderControlState.showStream(context, _liveRoomController); }),
+      if (Platform.isAndroid || PlatformUtils.isDesktop)
+        ListTile(leading: const Icon(Icons.picture_in_picture_outlined), title: const Text('小窗播放'), onTap: () {
+          Navigator.pop(sheetContext);
+          if (PlatformUtils.isDesktop) { plPlayerController.toggleDesktopPip(); }
+          else if (AndroidHelper.isPipAvailable) { plPlayerController.enterPip(); }
+          else { SmartDialog.showToast('当前设备暂不支持画中画'); }
+        }),
+      ListTile(leading: const Icon(Icons.schedule), title: const Text('定时关闭'), onTap: () {
+        Navigator.pop(sheetContext); shutdownTimerService.showScheduleExitDialog(context, isFullScreen: isFullScreen, isLive: true);
+      }),
+      if (PlatformUtils.isDesktop)
+        Obx(() => SwitchListTile(title: const Text('窗口置顶'), value: plPlayerController.isAlwaysOnTop.value, onChanged: plPlayerController.setAlwaysOnTop)),
+      if (plPlayerController.videoPlayerController case final player?) ...[
+        ListTile(leading: const Icon(Icons.info_outline), title: const Text('播放信息'), onTap: () {
+          Navigator.pop(sheetContext); HeaderControlState.showPlayerInfo(context, player: player);
+        }),
+        if (PlatformUtils.isMobile) ListTile(leading: const Icon(Icons.volume_up_outlined), title: const Text('播放器音量'), onTap: () {
+          Navigator.pop(sheetContext); showPlayerVolumeDialog(context, () {}, onChanged: player.setVolume);
+        }),
+      ],
+    ]))]),
+  ));
+
 
   PreferredSizeWidget _buildAppBar(bool isFullScreen) {
     final compactHeader = MediaQuery.sizeOf(context).width < 520;
@@ -755,132 +815,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: onlineWidget,
           ),
-        // IconButton(
-        //   tooltip: '刷新',
-        //   onPressed: _liveRoomController.queryLiveUrl,
-        //   icon: const Icon(Icons.refresh, size: 20),
-        // ),
-        PopupMenuButton(
-          icon: const Icon(Icons.more_vert, size: 20),
-          itemBuilder: (BuildContext context) {
-            final liveUrl =
-                'https://live.bilibili.com/${_liveRoomController.roomId}';
-            return <PopupMenuEntry>[
-              if (PlatformUtils.isMobile)
-                CheckedPopupMenuItem(
-                  checked: plPlayerController.continueLiveInBackground.value,
-                  onTap: () => plPlayerController.setContinueLiveInBackground(
-                    !plPlayerController.continueLiveInBackground.value,
-                  ),
-                  child: const Text('后台听直播'),
-                ),
-              if (compactHeader)
-                PopupMenuItem(
-                  onTap: () => showLiveActivities(
-                    context,
-                    _liveRoomController.roomFeatures,
-                    _liveRoomController.ruid ?? 0,
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.redeem, size: 19),
-                      SizedBox(width: 10),
-                      Text('红包与天选'),
-                    ],
-                  ),
-                ),
-              for (final section in LiveSettingsSection.values)
-                PopupMenuItem(
-                  onTap: () => showLiveSettings(
-                    context,
-                    _liveRoomController,
-                    section: section,
-                    onDisplaySettings: () => showSetDanmaku(isLive: true),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(switch (section) {
-                        LiveSettingsSection.danmaku =>
-                          Icons.chat_bubble_outline,
-                        LiveSettingsSection.gifts =>
-                          Icons.card_giftcard_outlined,
-                        LiveSettingsSection.notifications =>
-                          Icons.notifications_outlined,
-                      }, size: 19),
-                      const SizedBox(width: 10),
-                      Flexible(child: Text(section.title)),
-                    ],
-                  ),
-                ),
-              PopupMenuItem(
-                onTap: () => Utils.copyText(liveUrl),
-                child: const Row(
-                  spacing: 10,
-                  mainAxisSize: .min,
-                  children: [
-                    Icon(Icons.copy, size: 19),
-                    Text('复制链接'),
-                  ],
-                ),
-              ),
-              if (PlatformUtils.isMobile)
-                PopupMenuItem(
-                  onTap: () => ShareUtils.shareText(liveUrl),
-                  child: const Row(
-                    spacing: 10,
-                    mainAxisSize: .min,
-                    children: [
-                      Icon(Icons.share, size: 19),
-                      Text('分享直播间'),
-                    ],
-                  ),
-                ),
-              PopupMenuItem(
-                onTap: () => PageUtils.inAppWebview(liveUrl, off: true),
-                child: const Row(
-                  spacing: 10,
-                  mainAxisSize: .min,
-                  children: [
-                    Icon(Icons.open_in_browser, size: 19),
-                    Text('浏览器打开'),
-                  ],
-                ),
-              ),
-              if (_liveRoomController.roomInfoH5.value != null)
-                PopupMenuItem(
-                  onTap: () {
-                    try {
-                      RoomInfoH5Data roomInfo =
-                          _liveRoomController.roomInfoH5.value!;
-                      PageUtils.pmShare(
-                        this.context,
-                        content: {
-                          "cover": roomInfo.roomInfo!.cover!,
-                          "sourceID": _liveRoomController.roomId.toString(),
-                          "title": roomInfo.roomInfo!.title!,
-                          "url": liveUrl,
-                          "authorID": roomInfo.roomInfo!.uid.toString(),
-                          "source": "直播",
-                          "desc": roomInfo.roomInfo!.title!,
-                          "author": roomInfo.anchorInfo!.baseInfo!.uname,
-                        },
-                      );
-                    } catch (e) {
-                      SmartDialog.showToast(e.toString());
-                    }
-                  },
-                  child: const Row(
-                    spacing: 10,
-                    mainAxisSize: .min,
-                    children: [
-                      Icon(Icons.forward_to_inbox, size: 19),
-                      Text('分享至消息'),
-                    ],
-                  ),
-                ),
-            ];
-          },
-        ),
+        IconButton(tooltip: '更多', onPressed: _showMore, icon: const Icon(Icons.more_vert, size: 22)),
       ],
     );
   }
@@ -940,7 +875,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
       liveRoomController: _liveRoomController,
     );
     return Padding(
-      padding: .only(bottom: 12, top: isPortrait ? 12 : 0),
+      padding: EdgeInsets.only(bottom: isPP ? 0 : 4, top: isPP ? 0 : 4),
       child: _liveRoomController.showSuperChat
           ? PageView(
               key: pageKey,
@@ -977,27 +912,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                   borderRadius: BorderRadius.circular(24),
                   child: Row(
                     children: [
-                      Obx(
-                        () => IconButton(
-                          tooltip: '画面弹幕',
-                          constraints: const BoxConstraints.tightFor(
-                            width: 38,
-                            height: 44,
-                          ),
-                          padding: EdgeInsets.zero,
-                          onPressed: () =>
-                              _liveRoomController.setDanmakuVisible(
-                                !plPlayerController.enableShowLiveDanmaku.value,
-                              ),
-                          icon: Icon(
-                            plPlayerController.enableShowLiveDanmaku.value
-                                ? CustomIcons.dm_on
-                                : CustomIcons.dm_off,
-                            color: Colors.white70,
-                            size: 20,
-                          ),
-                        ),
-                      ),
+                      const SizedBox(width: 14),
                       const Expanded(
                         child: Text(
                           '发个弹幕聊聊',
@@ -1009,7 +924,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                       IconButton(
                         tooltip: '表情弹幕',
                         constraints: const BoxConstraints.tightFor(
-                          width: 38,
+                          width: 44,
                           height: 44,
                         ),
                         padding: EdgeInsets.zero,

@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 List<InlineSpan> liveBadgeSpans(
   LiveUserBadges badges, {
   bool includeMedal = true,
+  VoidCallback? onTap,
 }) {
   if (badges.anonymous) return const [];
   WidgetSpan badge(String label, Color color, {IconData? icon, String? tip}) =>
@@ -11,19 +12,21 @@ List<InlineSpan> liveBadgeSpans(
         alignment: PlaceholderAlignment.middle,
         child: Padding(
           padding: const EdgeInsets.only(right: 4, bottom: 2),
-          child: Tooltip(
+          child: GestureDetector(
+            onTap: onTap,
+            child: Tooltip(
             message: tip ?? label,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
               decoration: BoxDecoration(
                 color: color,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, size: 11, color: Colors.white),
+                    Icon(icon, size: 11, color: color.computeLuminance() > .18 ? Colors.black87 : Colors.white),
                     const SizedBox(width: 2),
                   ],
                   ConstrainedBox(
@@ -32,10 +35,10 @@ List<InlineSpan> liveBadgeSpans(
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 10,
+                      style: TextStyle(
+                        fontSize: 11,
                         height: 1.1,
-                        color: Colors.white,
+                        color: color.computeLuminance() > .18 ? Colors.black87 : Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -43,7 +46,7 @@ List<InlineSpan> liveBadgeSpans(
                 ],
               ),
             ),
-          ),
+          )),
         ),
       );
   final guard = const {1: '总督', 2: '提督', 3: '舰长'}[badges.guard];
@@ -81,13 +84,13 @@ List<InlineSpan> liveBadgeSpans(
         alignment: PlaceholderAlignment.middle,
         child: Padding(
           padding: const EdgeInsets.only(right: 4),
-          child: Image.network(
+          child: GestureDetector(onTap: onTap, child: Image.network(
             badges.titleImage,
             width: 72,
             height: 22,
             errorBuilder: (_, _, _) =>
                 const Text('头衔', style: TextStyle(fontSize: 10)),
-          ),
+          )),
         ),
       )
     else if (badges.title.isNotEmpty)

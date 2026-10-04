@@ -15,8 +15,12 @@ Future<void> showMemberReportDialog(
   BuildContext context, {
   required Object? name,
   required Object mid,
+  String? initialReason,
 }) {
   final Set<int> reason = {};
+  if (initialReason != null && _reason.contains(initialReason)) {
+    reason.add(_reason.indexOf(initialReason));
+  }
   int? reasonV2;
 
   return showDialog(
