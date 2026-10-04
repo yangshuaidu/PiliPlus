@@ -350,151 +350,154 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (_message != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Text(_message!),
-                      ),
-                    if (config != null && config.packages.isEmpty)
-                      const Text('当前账号暂无可用红包套餐'),
-                    for (final package
-                        in config?.packages ?? <LiveRedPacketPackage>[])
-                      Card(
-                        color: identical(_package, package)
-                            ? Theme.of(context).colorScheme.secondaryContainer
-                            : null,
-                        child: ListTile(
-                          onTap: _busy || !package.enabled
-                              ? null
-                              : () => setState(() {
-                                  _package = package;
-                                  _count = package.counts.firstOrNull;
-                                  _danmaku = package.danmaku.firstOrNull;
-                                  _requirement =
-                                      config!.requirements.containsKey(
-                                        package.defaultRequirement,
-                                      )
-                                      ? package.defaultRequirement
-                                      : config.requirements.keys.firstOrNull;
-                                }),
-                          leading:
-                              package.awards.firstOrNull?.image.isNotEmpty ==
-                                  true
-                              ? Image.network(
-                                  package.awards.first.image,
-                                  width: 42,
-                                  height: 42,
-                                  errorBuilder: (_, _, _) =>
-                                      const Icon(Icons.redeem),
-                                )
-                              : const Icon(Icons.redeem),
-                          title: Text(package.title),
-                          subtitle: Text(
-                            '${liveBatteryAmount(package.price)} 电池'
-                            '${package.tips.isNotEmpty ? '\n${package.tips}' : ''}'
-                            '${package.enabled ? '' : '\n当前不可发送'}',
-                          ),
-                          trailing: identical(_package, package)
-                              ? const Icon(Icons.check_circle)
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_message != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(_message!),
+                        ),
+                      if (config != null && config.packages.isEmpty)
+                        const Text('当前账号暂无可用红包套餐'),
+                      for (final package
+                          in config?.packages ?? <LiveRedPacketPackage>[])
+                        Card(
+                          color: identical(_package, package)
+                              ? Theme.of(context).colorScheme.secondaryContainer
                               : null,
+                          child: ListTile(
+                            onTap: _busy || !package.enabled
+                                ? null
+                                : () => setState(() {
+                                    _package = package;
+                                    _count = package.counts.firstOrNull;
+                                    _danmaku = package.danmaku.firstOrNull;
+                                    _requirement =
+                                        config!.requirements.containsKey(
+                                          package.defaultRequirement,
+                                        )
+                                        ? package.defaultRequirement
+                                        : config.requirements.keys.firstOrNull;
+                                  }),
+                            leading:
+                                package.awards.firstOrNull?.image.isNotEmpty ==
+                                    true
+                                ? Image.network(
+                                    package.awards.first.image,
+                                    width: 42,
+                                    height: 42,
+                                    errorBuilder: (_, _, _) =>
+                                        const Icon(Icons.redeem),
+                                  )
+                                : const Icon(Icons.redeem),
+                            title: Text(package.title),
+                            subtitle: Text(
+                              '${liveBatteryAmount(package.price)} 电池'
+                              '${package.tips.isNotEmpty ? '\n${package.tips}' : ''}'
+                              '${package.enabled ? '' : '\n当前不可发送'}',
+                            ),
+                            trailing: identical(_package, package)
+                                ? const Icon(Icons.check_circle)
+                                : null,
+                          ),
+                        ),
+                      if (config != null) ...[
+                        const SizedBox(height: 12),
+                        const Text('开奖时间'),
+                        if (config.durations.isEmpty)
+                          const Text('接口未返回可用时长，暂不能发送'),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            for (final duration in config.durations)
+                              ChoiceChip(
+                                label: Text(
+                                  duration == 0
+                                      ? '平台默认'
+                                      : '${duration ~/ 60} 分钟',
+                                ),
+                                selected: _duration == duration,
+                                onSelected: _busy
+                                    ? null
+                                    : (_) =>
+                                          setState(() => _duration = duration),
+                              ),
+                          ],
+                        ),
+                      ],
+                      if (_type == LiveRedPacketType.battery &&
+                          _package != null) ...[
+                        const Text('红包数量'),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            for (final count in _package!.counts)
+                              ChoiceChip(
+                                label: Text('$count 个'),
+                                selected: _count == count,
+                                onSelected: _busy
+                                    ? null
+                                    : (_) => setState(() => _count = count),
+                              ),
+                          ],
+                        ),
+                        const Text('参与条件'),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            for (final requirement
+                                in config!.requirements.entries)
+                              ChoiceChip(
+                                label: Text(requirement.value),
+                                selected: _requirement == requirement.key,
+                                onSelected: _busy
+                                    ? null
+                                    : (_) => setState(
+                                        () => _requirement = requirement.key,
+                                      ),
+                              ),
+                          ],
+                        ),
+                        if (config.requirements.isEmpty)
+                          const Text('接口未返回参与条件，暂不能发送'),
+                      ],
+                      if (_package?.danmaku.isNotEmpty == true) ...[
+                        const SizedBox(height: 12),
+                        const Text('红包附带弹幕'),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            for (final danmaku in _package!.danmaku)
+                              ChoiceChip(
+                                label: Text(danmaku.text),
+                                selected: _danmaku?.id == danmaku.id,
+                                onSelected: _busy
+                                    ? null
+                                    : (_) => setState(() => _danmaku = danmaku),
+                              ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      FilledButton(
+                        onPressed:
+                            _busy ||
+                                _package == null ||
+                                _duration == null ||
+                                !batteryReady
+                            ? null
+                            : _send,
+                        child: Text(
+                          _package == null
+                              ? '选择红包套餐'
+                              : '发红包 · ${liveBatteryAmount(_package!.price)} 电池',
                         ),
                       ),
-                    if (config != null) ...[
-                      const SizedBox(height: 12),
-                      const Text('开奖时间'),
-                      if (config.durations.isEmpty)
-                        const Text('接口未返回可用时长，暂不能发送'),
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          for (final duration in config.durations)
-                            ChoiceChip(
-                              label: Text(
-                                duration == 0 ? '平台默认' : '${duration ~/ 60} 分钟',
-                              ),
-                              selected: _duration == duration,
-                              onSelected: _busy
-                                  ? null
-                                  : (_) => setState(() => _duration = duration),
-                            ),
-                        ],
+                      TextButton(
+                        onPressed: _busy ? null : _load,
+                        child: const Text('刷新套餐'),
                       ),
                     ],
-                    if (_type == LiveRedPacketType.battery &&
-                        _package != null) ...[
-                      const Text('红包数量'),
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          for (final count in _package!.counts)
-                            ChoiceChip(
-                              label: Text('$count 个'),
-                              selected: _count == count,
-                              onSelected: _busy
-                                  ? null
-                                  : (_) => setState(() => _count = count),
-                            ),
-                        ],
-                      ),
-                      const Text('参与条件'),
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          for (final requirement
-                              in config!.requirements.entries)
-                            ChoiceChip(
-                              label: Text(requirement.value),
-                              selected: _requirement == requirement.key,
-                              onSelected: _busy
-                                  ? null
-                                  : (_) => setState(
-                                      () => _requirement = requirement.key,
-                                    ),
-                            ),
-                        ],
-                      ),
-                      if (config.requirements.isEmpty)
-                        const Text('接口未返回参与条件，暂不能发送'),
-                    ],
-                    if (_package?.danmaku.isNotEmpty == true) ...[
-                      const SizedBox(height: 12),
-                      const Text('红包附带弹幕'),
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          for (final danmaku in _package!.danmaku)
-                            ChoiceChip(
-                              label: Text(danmaku.text),
-                              selected: _danmaku?.id == danmaku.id,
-                              onSelected: _busy
-                                  ? null
-                                  : (_) => setState(() => _danmaku = danmaku),
-                            ),
-                        ],
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed:
-                          _busy ||
-                              _package == null ||
-                              _duration == null ||
-                              !batteryReady
-                          ? null
-                          : _send,
-                      child: Text(
-                        _package == null
-                            ? '选择红包套餐'
-                            : '发红包 · ${liveBatteryAmount(_package!.price)} 电池',
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: _busy ? null : _load,
-                      child: const Text('刷新套餐'),
-                    ),
-                  ],
                   ),
                 ),
               ),
