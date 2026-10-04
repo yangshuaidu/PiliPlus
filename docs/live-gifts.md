@@ -38,7 +38,7 @@
 - 手机房间资料优先读取签名的 `/xlive/app-room/v1/index/getInfoByRoom`，失败后回退 H5 资料。只采用该房间 `room_info.app_background`，空值和已核实的平台默认图忽略；不使用封面、网页背景或内置山景代替。自定义皮肤铺满直播页面，面板保持不透明深色。
 - 顶部资料使用 34 头像及紧凑关注入口，沿用原关注请求与取消关注流程。右侧观众头像直接叠放，只有人数具有独立圆形底色。顶部高 62，横屏源画面与顶部相隔 8；没有预留广告空白。
 - 荣耀等级使用官方内容接口 `key=wealth` 的 `wealth_level_medal` 整张 PNG，保留原始等级数字及 36:16 比例。内置的是 2026-10-04 核实的 1–80 级 URL 目录，不是重绘图标；素材加载失败或未知级别仅显示文字等级，匿名用户不显示身份装饰。
-- 礼物分类与排序、刷新、关闭放在一行；四列网格正常字号时高 87，大字号改三列。当前房间粉丝勋章进度来自同账号 `getInfoByUser` 中 `fans_medal.medal`，核对 `target_id` 后使用 `intimacy` 与 `next_intimacy`。其他主播的佩戴勋章不混入；缺失阈值显示“暂未提供”，不把荣耀等级当作粉丝亲密度。
+- 礼物分类与排序、刷新、关闭放在一行；四列网格正常字号时高 87，大字号改三列。当前房间粉丝勋章进度来自同账号只读 `giftMessageV2` 的 `fans_medal_info.current.medal`（不使用 `expectation` 的赠送后预测），核对 `target_id` 后使用 `intimacy` 与 `next_intimacy`。其他主播的佩戴勋章不混入；缺失阈值显示“暂未提供”，不把荣耀等级当作粉丝亲密度。
 - 观众／大航海主切换高 38，周期选择按文字宽度收紧；头像 34、昵称 13、辅助信息 11。现有匿名处理、分页、本人排名和官方上舰入口保留。
 - `LiveMobileRoomLayout`、`LiveAnchorChip`、`LiveAudienceButton`、`LiveChatLine`、`LiveRoomComposer` 同时被生产页面及截图测试使用。截图中的静态直播帧和合成消息只验证布局，不能作为真实视频播放、交易或手机系统行为的证据；公开参考图片只在测试目录，不作为应用内置皮肤。
 
@@ -120,7 +120,7 @@ API 域名均为 `https://api.live.bilibili.com`：
 
 ## 验证与验收边界
 
-开发验收使用 GitHub Actions 安装的 Flutter 3.47.6 和项目要求的补丁，不依赖开发电脑的 Flutter 或 Android SDK。Android、Windows 和 iOS 工作流共用 `tool/check_live.ps1`，包含静态检查及 16 个测试文件，覆盖原有账号删除、直播标记、礼物、红包／天选、SC、拆包／重连／回显、匿名字段、徽章、PK、设置保存、窄屏面板、分类隔离、用户资料和移动端后台生命周期。`build.yml` 的 `check_only` 模式仅运行云端检查，不生成应用安装包。
+开发验收使用 GitHub Actions 安装的 Flutter 3.47.6 和项目要求的补丁，不依赖开发电脑的 Flutter 或 Android SDK。Android、Windows 和 iOS 工作流共用 `tool/check_live.ps1`，包含静态检查及 17 个测试文件，覆盖原有账号删除、直播标记、礼物、红包／天选、SC、拆包／重连／回显、匿名字段、徽章、PK、设置保存、窄屏面板、分类隔离、用户资料和移动端后台生命周期。`build.yml` 的 `check_only` 模式仅运行云端检查，不生成应用安装包。
 
 UI 用例覆盖 320／360 像素竖屏、740×360 横屏、键盘避让，以及 Android／iOS／Windows 主题下 SC 确认与取消不提交；榜单另覆盖 320×240 短屏、双倍字号、匿名身份和切榜响应乱序。交易用例全部使用假接口，不产生真实礼物、SC 订单、弹幕或抽奖参与。
 

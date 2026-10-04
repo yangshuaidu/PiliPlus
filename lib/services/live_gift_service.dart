@@ -37,6 +37,7 @@ class LiveGiftService {
   static const catalogPath = '/xlive/web-room/v1/giftPanel/roomGiftList';
   static const bagPath = '/xlive/web-room/v1/gift/bag_list';
   static const walletPath = '/xlive/web-room/v1/index/getInfoByUser';
+  static const medalPath = '/xlive/web-room/v1/giftPanel/giftMessageV2';
   static const sendGoldPath = '/xlive/revenue/v2/gift/sendGoldMultiUser';
   static const sendBagPath = '/xlive/revenue/v2/gift/sendBagMultiUser';
 
@@ -137,20 +138,45 @@ class LiveGiftService {
     final bagDisabled =
         liveInt(liveMap(data[0]['gift_data'])['bag_tab_disable']) == 1;
     if (bagDisabled) errors['背包'] = '当前直播间不支持背包赠送';
+    final gifts = LiveGiftParser.gifts(
+      data[0],
+      roomId,
+      anchorUid,
+    ).where((gift) => gift.coinType == 'gold').toList(growable: false);
+    LiveGift? medalGift;
+    for (final gift in gifts) {
+      if (gift.sendable && gift.priceKnown && !gift.isRedPacket) {
+        medalGift = gift;
+        break;
+      }
+    }
+    LiveMedalProgress? medal;
+    if (medalGift != null) {
+      // Official gift-panel GET exposes current and projected progress together.
+      // Reading this endpoint does not create an order or send the selected gift.
+      final detail = await read('粉丝勋章', medalPath, {
+        'target_id': anchorUid,
+        'room_id': roomId,
+        'price': medalGift.price,
+        'coin_type': medalGift.coinType,
+        'gift_id': medalGift.id,
+        'gift_type': 0,
+        'platform': 'pc',
+        'anchor_guest': '',
+      });
+      _guard(account);
+      medal = LiveMedalProgress.fromGiftMessage(detail, anchorUid);
+    }
     return LiveGiftSnapshot(
       accountIdentity: account.identity,
       accountUid: account.uid,
-      gifts: LiveGiftParser.gifts(
-        data[0],
-        roomId,
-        anchorUid,
-      ).where((gift) => gift.coinType == 'gold').toList(growable: false),
+      gifts: gifts,
       groups: LiveGiftParser.groups(data[0]),
       bag: bagDisabled
           ? const []
           : LiveGiftParser.bag(data[1], roomId, anchorUid, now()),
       wallet: LiveWallet(gold: liveInt(wallet['gold'])),
-      medal: LiveMedalProgress.fromUserInfo(data[2], anchorUid),
+      medal: medal,
       errors: errors,
     );
   }

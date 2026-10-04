@@ -151,12 +151,14 @@ class LiveMedalProgress {
       ? null
       : (nextIntimacy! - intimacy!).clamp(0, nextIntimacy!);
 
-  static LiveMedalProgress? fromUserInfo(
+  static LiveMedalProgress? fromGiftMessage(
     Map<String, dynamic> data,
     int anchorUid,
   ) {
-    final fans = liveMap(data['fans_medal']);
-    final medal = liveMap(fans['medal']);
+    final fans = liveMap(data['fans_medal_info']);
+    if (liveBool(fans['received']) != true) return null;
+    // Only current progress is authoritative; expectation previews a purchase.
+    final medal = liveMap(liveMap(fans['current'])['medal']);
     // An equipped medal for another anchor is not this room's progress.
     if (liveInt(medal['target_id']) != anchorUid) return null;
     final level = liveInt(medal['level']);

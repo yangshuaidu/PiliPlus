@@ -186,30 +186,31 @@ void main() {
     'fan progress belongs to this anchor and missing thresholds stay unknown',
     () {
       Map<String, dynamic> info(int uid, {int? next}) => {
-        'fans_medal': {
-          'medal': {
+        'fans_medal_info': {
+          'received': true,
+          'current': {'medal': {
             'target_id': uid,
             'medal_name': '测试勋章',
             'level': 27,
             'intimacy': 722,
             if (next != null) 'next_intimacy': next,
-          },
+          }},
         },
       };
       expect(
-        LiveMedalProgress.fromUserInfo(info(301, next: 2000), 300),
+        LiveMedalProgress.fromGiftMessage(info(301, next: 2000), 300),
         isNull,
       );
-      final medal = LiveMedalProgress.fromUserInfo(info(300, next: 2000), 300)!;
+      final medal = LiveMedalProgress.fromGiftMessage(info(300, next: 2000), 300)!;
       expect(medal.remaining, 1278);
       expect(medal.fraction, .361);
-      expect(LiveMedalProgress.fromUserInfo(info(300), 300)!.fraction, isNull);
+      expect(LiveMedalProgress.fromGiftMessage(info(300), 300)!.fraction, isNull);
       expect(
-        LiveMedalProgress.fromUserInfo(info(300, next: 0), 300)!.remaining,
+        LiveMedalProgress.fromGiftMessage(info(300, next: 0), 300)!.remaining,
         isNull,
       );
       expect(
-        LiveMedalProgress.fromUserInfo(info(300, next: 100), 300)!.fraction,
+        LiveMedalProgress.fromGiftMessage(info(300, next: 100), 300)!.fraction,
         1,
       );
     },

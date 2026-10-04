@@ -29,6 +29,8 @@ class FakeTransport implements LiveGiftTransport {
   Map<String, dynamic>? response;
   Map<String, dynamic>? catalogData;
   Map<String, dynamic>? fansMedal;
+  Map<String, dynamic>? giftMessageData;
+  Map<String, dynamic>? lastMedalQuery;
   Completer<void>? postGate;
   final postStarted = Completer<void>();
 
@@ -40,6 +42,7 @@ class FakeTransport implements LiveGiftTransport {
   ) async {
     if (failReads) throw Exception('offline');
     if (path == LiveGiftService.catalogPath) onCatalogRead?.call();
+    if (path == LiveGiftService.medalPath) lastMedalQuery = Map.of(query);
     final data = switch (path) {
       LiveGiftService.catalogPath =>
         catalogData ??
@@ -77,7 +80,12 @@ class FakeTransport implements LiveGiftTransport {
       },
       LiveGiftService.walletPath => {
         'wallet': {'gold': balance},
-        if (fansMedal != null) 'fans_medal': fansMedal,
+      },
+      LiveGiftService.medalPath => giftMessageData ?? {
+        'fans_medal_info': {
+          'received': fansMedal != null,
+          if (fansMedal != null) 'current': fansMedal,
+        },
       },
       _ => throw StateError('Unexpected read: $path'),
     };
