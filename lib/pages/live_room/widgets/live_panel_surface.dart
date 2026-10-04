@@ -29,7 +29,7 @@ Size livePanelSize(
             height * .66,
             sourceAspectRatio < 1
                 ? height
-                : height - 72 - size.width / sourceAspectRatio,
+                : math.max(240.0, height - 72 - size.width / sourceAspectRatio),
           ),
         )
       : math.min(420.0, height * .48);

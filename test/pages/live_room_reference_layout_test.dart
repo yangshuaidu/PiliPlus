@@ -41,13 +41,14 @@ void main() {
       )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
     }
   });
-  for (final scenario in ['horizontal', 'portrait', 'default', 'narrow']) {
+  for (final scenario in ['horizontal', 'portrait', 'default', 'narrow', 'source-4x3']) {
     testWidgets('production mobile controls and source layout: $scenario', (
       tester,
     ) async {
       final narrow = scenario == 'narrow';
       final size = narrow ? const Size(360, 640) : const Size(402, 874);
       final portrait = scenario == 'portrait';
+      final sourceRatio = portrait ? 9 / 16 : scenario == 'source-4x3' ? 4 / 3 : 16 / 9;
       tester.view.physicalSize = size * 3;
       tester.view.devicePixelRatio = 3;
       tester.view.padding = narrow
@@ -107,7 +108,7 @@ void main() {
                     ),
                     LiveMobileRoomLayout(
                       portraitSource: portrait,
-                      aspectRatio: portrait ? 9 / 16 : 16 / 9,
+                      aspectRatio: sourceRatio,
                       padding: safe,
                       cleanScreen: clean,
                       onCleanScreen: () => setState(() => clean = !clean),
@@ -202,6 +203,7 @@ void main() {
                         onGift: () => showLivePanel<void>(
                           context,
                           (_) => LiveGiftPanel(
+                            sourceAspectRatio: sourceRatio,
                             service: service,
                             anchorName: '测试主播',
                           ),
@@ -229,7 +231,7 @@ void main() {
       if (portrait) {
         expect(video.size, size);
       } else {
-        expect(video.width / video.height, closeTo(16 / 9, .001));
+        expect(video.width / video.height, closeTo(sourceRatio, .001));
         expect(video.top, narrow ? 94 : 132);
       }
       expect(
