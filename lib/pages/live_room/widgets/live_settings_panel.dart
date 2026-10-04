@@ -112,9 +112,11 @@ class _LiveSettingsPanelState extends State<LiveSettingsPanel> {
           ),
         ),
         Expanded(
-          child: ListView(
+          child: SingleChildScrollView(
             controller: _scroll,
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (_section == LiveSettingsSection.danmaku) ...[
                 ?widget.danmakuVisibility,
@@ -201,6 +203,7 @@ class _LiveSettingsPanelState extends State<LiveSettingsPanel> {
                 ),
               ),
             ],
+            ),
           ),
         ),
       ],
