@@ -7,14 +7,21 @@ const liveAccent = Color(0xFFFB7299);
 const livePanelBackground = Color(0xFF1C1B23);
 
 class LiveChoiceChip extends StatelessWidget {
-  const LiveChoiceChip({super.key, required this.label, required this.selected,
-    required this.onSelected});
+  const LiveChoiceChip({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
   final Widget label;
   final bool selected;
   final ValueChanged<bool>? onSelected;
   @override
   Widget build(BuildContext context) => ChoiceChip(
-    label: label, selected: selected, onSelected: onSelected, showCheckmark: false,
+    label: label,
+    selected: selected,
+    onSelected: onSelected,
+    showCheckmark: false,
     labelStyle: const TextStyle(fontSize: 12),
     labelPadding: const EdgeInsets.symmetric(horizontal: 7),
     padding: const EdgeInsets.symmetric(vertical: 2),
@@ -25,24 +32,43 @@ class LiveChoiceChip extends StatelessWidget {
 }
 
 class LivePaymentFooter extends StatelessWidget {
-  const LivePaymentFooter({super.key, required this.amount,
-    required this.actionKey, required this.onNext});
+  const LivePaymentFooter({
+    super.key,
+    required this.amount,
+    required this.actionKey,
+    required this.onNext,
+  });
   final String amount;
   final Key actionKey;
   final VoidCallback? onNext;
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-    decoration: const BoxDecoration(border: Border(top: BorderSide(color: Colors.white12))),
-    child: Row(children: [
-      Expanded(child: Text(amount, style: const TextStyle(fontSize: 13),
-        maxLines: 2, overflow: TextOverflow.ellipsis)),
-      const SizedBox(width: 12),
-      FilledButton(key: actionKey, onPressed: onNext,
-        style: FilledButton.styleFrom(minimumSize: const Size(96, 36),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-        child: const Text('下一步', style: TextStyle(fontSize: 13))),
-    ]),
+    decoration: const BoxDecoration(
+      border: Border(top: BorderSide(color: Colors.white12)),
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            amount,
+            style: const TextStyle(fontSize: 13),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 12),
+        FilledButton(
+          key: actionKey,
+          onPressed: onNext,
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(96, 36),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: const Text('下一步', style: TextStyle(fontSize: 13)),
+        ),
+      ],
+    ),
   );
 }
 

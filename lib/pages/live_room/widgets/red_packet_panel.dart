@@ -359,42 +359,123 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
                         ),
                       if (config != null && config.packages.isEmpty)
                         const Text('当前账号暂无可用红包套餐'),
-                      LayoutBuilder(builder: (context, limits) {
-                        final columns = MediaQuery.textScalerOf(context).scale(12) > 17 ? 2 : 3;
-                        return Wrap(spacing: 8, runSpacing: 8, children: [
-                          for (final package in config?.packages ?? <LiveRedPacketPackage>[])
-                            SizedBox(width: (limits.maxWidth - (columns - 1) * 8) / columns,
-                              child: Material(
-                                color: identical(_package, package) ? liveAccent.withValues(alpha: .12) : const Color(0xFF26232D),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8),
-                                  side: BorderSide(color: identical(_package, package) ? liveAccent : Colors.white12)),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(8),
-                                  onTap: _busy || !package.enabled ? null : () => setState(() {
-                                    _package = package;
-                                    _count = package.counts.firstOrNull;
-                                    _danmaku = package.danmaku.firstOrNull;
-                                    _requirement = config!.requirements.containsKey(package.defaultRequirement)
-                                      ? package.defaultRequirement : config.requirements.keys.firstOrNull;
-                                  }),
-                                  child: Padding(padding: const EdgeInsets.all(8),
-                                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                                      if (package.awards.firstOrNull?.image.isNotEmpty == true)
-                                        Image.network(package.awards.first.image, width: 26, height: 26,
-                                          errorBuilder: (_, _, _) => const Icon(Icons.redeem, size: 26))
-                                      else const Icon(Icons.redeem, size: 26, color: liveAccent),
-                                      const SizedBox(height: 4),
-                                      Text(package.title, textAlign: TextAlign.center,
-                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-                                      Text('${liveBatteryAmount(package.price)} 电池',
-                                        style: const TextStyle(fontSize: 11, color: Colors.white60)),
-                                      if (package.tips.isNotEmpty) Text(package.tips, style: const TextStyle(fontSize: 11)),
-                                      if (!package.enabled) const Text('当前不可发送', style: TextStyle(fontSize: 11)),
-                                    ])),
+                      LayoutBuilder(
+                        builder: (context, limits) {
+                          final columns =
+                              MediaQuery.textScalerOf(context).scale(12) > 17
+                              ? 2
+                              : 3;
+                          return Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final package
+                                  in config?.packages ??
+                                      <LiveRedPacketPackage>[])
+                                SizedBox(
+                                  key: ValueKey('red-package-${package.id}'),
+                                  width:
+                                      (limits.maxWidth - (columns - 1) * 8) /
+                                      columns,
+                                  child: Material(
+                                    color: identical(_package, package)
+                                        ? liveAccent.withValues(alpha: .12)
+                                        : const Color(0xFF26232D),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      side: BorderSide(
+                                        color: identical(_package, package)
+                                            ? liveAccent
+                                            : Colors.white12,
+                                      ),
+                                    ),
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(8),
+                                      onTap: _busy || !package.enabled
+                                          ? null
+                                          : () => setState(() {
+                                              _package = package;
+                                              _count =
+                                                  package.counts.firstOrNull;
+                                              _danmaku =
+                                                  package.danmaku.firstOrNull;
+                                              _requirement =
+                                                  config!.requirements
+                                                      .containsKey(
+                                                        package
+                                                            .defaultRequirement,
+                                                      )
+                                                  ? package.defaultRequirement
+                                                  : config
+                                                        .requirements
+                                                        .keys
+                                                        .firstOrNull;
+                                            }),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            if (package
+                                                    .awards
+                                                    .firstOrNull
+                                                    ?.image
+                                                    .isNotEmpty ==
+                                                true)
+                                              Image.network(
+                                                package.awards.first.image,
+                                                width: 26,
+                                                height: 26,
+                                                errorBuilder: (_, _, _) =>
+                                                    const Icon(
+                                                      Icons.redeem,
+                                                      size: 26,
+                                                    ),
+                                              )
+                                            else
+                                              const Icon(
+                                                Icons.redeem,
+                                                size: 26,
+                                                color: liveAccent,
+                                              ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              package.title,
+                                              textAlign: TextAlign.center,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            Text(
+                                              '${liveBatteryAmount(package.price)} 电池',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.white60,
+                                              ),
+                                            ),
+                                            if (package.tips.isNotEmpty)
+                                              Text(
+                                                package.tips,
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            if (!package.enabled)
+                                              const Text(
+                                                '当前不可发送',
+                                                style: TextStyle(fontSize: 11),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              )),
-                        ]);
-                      }),
+                            ],
+                          );
+                        },
+                      ),
                       if (config != null) ...[
                         const SizedBox(height: 8),
                         const Text('开奖时间'),
@@ -482,9 +563,17 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
                 ),
               ),
               LivePaymentFooter(
-                amount: _package == null ? '选择红包套餐' : '合计 ${liveBatteryAmount(_package!.price)} 电池',
+                amount: _package == null
+                    ? '选择红包套餐'
+                    : '合计 ${liveBatteryAmount(_package!.price)} 电池',
                 actionKey: const ValueKey('live-redpacket-next'),
-                onNext: _busy || _package == null || _duration == null || !batteryReady ? null : _send,
+                onNext:
+                    _busy ||
+                        _package == null ||
+                        _duration == null ||
+                        !batteryReady
+                    ? null
+                    : _send,
               ),
             ],
           ),

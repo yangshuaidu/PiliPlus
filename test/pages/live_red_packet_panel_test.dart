@@ -51,7 +51,7 @@ void main() {
     await tester.tap(find.text('刷新套餐'));
     await tester.pumpAndSettle();
     expect(find.text('红包数量超过限制'), findsNothing);
-    expect(find.byType(ListTile), findsWidgets);
+    expect(find.byKey(const ValueKey('red-package-11')), findsOneWidget);
     expect(transport.postCount, 0);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
@@ -91,9 +91,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('10 电池'), findsWidgets);
     expect(tester.takeException(), isNull);
-    await tester.tap(find.byType(ListTile).first);
+    await tester.tap(find.byKey(const ValueKey('red-package-11')));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const ValueKey('live-redpacket-next')));
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('live-redpacket-next')),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('live-redpacket-next')));
     await tester.pump();

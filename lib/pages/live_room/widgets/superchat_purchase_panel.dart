@@ -397,31 +397,45 @@ class _LiveSuperChatPurchasePanelState
                           ),
                         if (config.tiers.isEmpty)
                           const Text('平台暂未返回本房间可购买的 SC 档位'),
-                        const Text('选择留言档位', style: TextStyle(fontSize: 12, color: Colors.white60)),
+                        const Text(
+                          '选择留言档位',
+                          style: TextStyle(fontSize: 12, color: Colors.white60),
+                        ),
                         const SizedBox(height: 6),
-                        LayoutBuilder(builder: (context, limits) {
-                          final columns = MediaQuery.textScalerOf(context).scale(12) > 17 ? 2 : 3;
-                          return Wrap(
-                          spacing: 8,
-                          runSpacing: 5,
-                          children: [
-                            for (final option in config.tiers)
-                              SizedBox(width: (limits.maxWidth - (columns - 1) * 8) / columns, child: LiveChoiceChip(
-                                selected:
-                                    !_customSelected && _gold == option.gold,
-                                onSelected: !_busy && option.enabled
-                                    ? (_) => setState(() {
-                                        _gold = option.gold;
-                                        _customSelected = false;
-                                      })
-                                    : null,
-                                label: Text(
-                                  '${liveBatteryAmount(option.gold)} 电池 · ${option.seconds} 秒${option.badge.isEmpty ? '' : '\n${option.badge}'}',
-                                ),
-                              )),
-                          ],
-                        );
-                        }),
+                        LayoutBuilder(
+                          builder: (context, limits) {
+                            final columns =
+                                MediaQuery.textScalerOf(context).scale(12) > 17
+                                ? 2
+                                : 3;
+                            return Wrap(
+                              spacing: 8,
+                              runSpacing: 5,
+                              children: [
+                                for (final option in config.tiers)
+                                  SizedBox(
+                                    width:
+                                        (limits.maxWidth - (columns - 1) * 8) /
+                                        columns,
+                                    child: LiveChoiceChip(
+                                      selected:
+                                          !_customSelected &&
+                                          _gold == option.gold,
+                                      onSelected: !_busy && option.enabled
+                                          ? (_) => setState(() {
+                                              _gold = option.gold;
+                                              _customSelected = false;
+                                            })
+                                          : null,
+                                      label: Text(
+                                        '${liveBatteryAmount(option.gold)} 电池 · ${option.seconds} 秒${option.badge.isEmpty ? '' : '\n${option.badge}'}',
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
                         const SizedBox(height: 12),
                         TextField(
                           controller: _text,
@@ -434,7 +448,11 @@ class _LiveSuperChatPurchasePanelState
                             hintText: '写下想对主播说的话…',
                             isDense: true,
                             contentPadding: EdgeInsets.all(12),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(8),
+                              ),
+                            ),
                           ),
                           onChanged: (_) => setState(() {
                             _translated = '';
@@ -558,9 +576,16 @@ class _LiveSuperChatPurchasePanelState
               LivePaymentFooter(
                 amount: '本次金额 ${liveBatteryAmount(_total)} 电池',
                 actionKey: const ValueKey('live-superchat-next'),
-                onNext: !_busy && _pending == null && tier != null && tier.enabled &&
-                  config != null && config.banReason.isEmpty && _text.text.trim().isNotEmpty
-                  ? _send : null,
+                onNext:
+                    !_busy &&
+                        _pending == null &&
+                        tier != null &&
+                        tier.enabled &&
+                        config != null &&
+                        config.banReason.isEmpty &&
+                        _text.text.trim().isNotEmpty
+                    ? _send
+                    : null,
               ),
             ],
           ),
