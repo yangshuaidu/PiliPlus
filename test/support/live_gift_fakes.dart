@@ -81,12 +81,14 @@ class FakeTransport implements LiveGiftTransport {
       LiveGiftService.walletPath => {
         'wallet': {'gold': balance},
       },
-      LiveGiftService.medalPath => giftMessageData ?? {
-        'fans_medal_info': {
-          'received': fansMedal != null,
-          if (fansMedal != null) 'current': fansMedal,
-        },
-      },
+      LiveGiftService.medalPath =>
+        giftMessageData ??
+            {
+              'fans_medal_info': {
+                'received': fansMedal != null,
+                if (fansMedal != null) 'current': fansMedal,
+              },
+            },
       _ => throw StateError('Unexpected read: $path'),
     };
     return {'code': 0, 'data': data};

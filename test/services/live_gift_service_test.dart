@@ -44,42 +44,52 @@ void main() {
   });
   tearDown(() => service.dispose());
 
-  test('medal progress reads official current state, never purchase projection', () async {
-    transport.giftMessageData = {
-      'fans_medal_info': {
-        'received': true,
-        'current': {'medal': {
-          'target_id': 300,
-          'medal_name': '测试勋章',
-          'level': 27,
-          'intimacy': 722,
-          'next_intimacy': 2000,
-        }},
-        'expectation': {'medal': {
-          'target_id': 300,
-          'medal_name': '测试勋章',
-          'level': 28,
-          'intimacy': 0,
-          'next_intimacy': 5000,
-        }},
-      },
-    };
-    final snapshot = await service.loadPanel();
-    expect(snapshot.medal!.level, 27);
-    expect(snapshot.medal!.remaining, 1278);
-    expect(transport.lastMedalQuery!['target_id'], 300);
-    expect(transport.lastMedalQuery!['room_id'], 200);
-    expect(transport.lastMedalQuery!['gift_id'], 10);
-    expect(transport.lastMedalQuery!['price'], 100);
-    expect(transport.postCount, 0);
-    transport.giftMessageData = {
-      'fans_medal_info': {'received': false, 'current': {
-        'medal': {'target_id': 300, 'medal_name': '测试勋章', 'level': 27}
-      }},
-    };
-    expect((await service.loadPanel()).medal, isNull);
-    expect(transport.postCount, 0);
-  });
+  test(
+    'medal progress reads official current state, never purchase projection',
+    () async {
+      transport.giftMessageData = {
+        'fans_medal_info': {
+          'received': true,
+          'current': {
+            'medal': {
+              'target_id': 300,
+              'medal_name': '测试勋章',
+              'level': 27,
+              'intimacy': 722,
+              'next_intimacy': 2000,
+            },
+          },
+          'expectation': {
+            'medal': {
+              'target_id': 300,
+              'medal_name': '测试勋章',
+              'level': 28,
+              'intimacy': 0,
+              'next_intimacy': 5000,
+            },
+          },
+        },
+      };
+      final snapshot = await service.loadPanel();
+      expect(snapshot.medal!.level, 27);
+      expect(snapshot.medal!.remaining, 1278);
+      expect(transport.lastMedalQuery!['target_id'], 300);
+      expect(transport.lastMedalQuery!['room_id'], 200);
+      expect(transport.lastMedalQuery!['gift_id'], 10);
+      expect(transport.lastMedalQuery!['price'], 100);
+      expect(transport.postCount, 0);
+      transport.giftMessageData = {
+        'fans_medal_info': {
+          'received': false,
+          'current': {
+            'medal': {'target_id': 300, 'medal_name': '测试勋章', 'level': 27},
+          },
+        },
+      };
+      expect((await service.loadPanel()).medal, isNull);
+      expect(transport.postCount, 0);
+    },
+  );
 
   test('room gift tabs are included and duplicate entries appear once', () {
     final gifts = LiveGiftParser.gifts(

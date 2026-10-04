@@ -173,6 +173,14 @@ class LivePanelSurface extends StatelessWidget {
           ),
           iconTheme: const IconThemeData(color: Colors.white70),
           dividerColor: Colors.white12,
+          chipTheme: ChipThemeData(
+            backgroundColor: Colors.white.withValues(alpha: .06),
+            selectedColor: accent.withValues(alpha: .18),
+            disabledColor: Colors.white.withValues(alpha: .04),
+            labelStyle: const TextStyle(color: Colors.white70),
+            secondaryLabelStyle: TextStyle(color: accent),
+            side: const BorderSide(color: Colors.white24),
+          ),
         ),
         child: CupertinoTheme(
           data: CupertinoThemeData(

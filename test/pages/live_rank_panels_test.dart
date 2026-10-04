@@ -7,6 +7,7 @@ import 'package:PiliPlus/models_new/live/live_contribution_rank/data.dart';
 import 'package:PiliPlus/pages/live_room/contribution_rank/controller.dart';
 import 'package:PiliPlus/pages/live_room/contribution_rank/view.dart';
 import 'package:PiliPlus/pages/live_room/widgets/guard_rank_panel.dart';
+import 'package:PiliPlus/pages/live_room/widgets/live_panel_surface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -60,6 +61,41 @@ Future<void> mount(
 }
 
 void main() {
+  testWidgets('dark panel chips remain legible over a light app chip theme', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.light().copyWith(
+          chipTheme: const ChipThemeData(
+            backgroundColor: Colors.white,
+            labelStyle: TextStyle(color: Colors.black),
+          ),
+        ),
+        home: Scaffold(
+          body: LivePanelSurface(
+            child: LiveChoiceChip(
+              label: const Text('月榜'),
+              selected: false,
+              onSelected: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    final theme = Theme.of(tester.element(find.text('月榜')));
+    final fill = Color.alphaBlend(
+      theme.chipTheme.backgroundColor!,
+      livePanelBackground,
+    );
+    final label = Color.alphaBlend(theme.chipTheme.labelStyle!.color!, fill);
+    expect(
+      (label.computeLuminance() + .05) / (fill.computeLuminance() + .05),
+      greaterThan(4.5),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   test('contribution pagination preserves own rank until the next first page', () {
     final controller = ContributionRankController(
       ruid: 10,
