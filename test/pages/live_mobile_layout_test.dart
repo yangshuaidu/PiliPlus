@@ -331,28 +331,72 @@ void main() {
   });
 
   for (final kind in ['profile', 'red-packet', 'superchat']) {
-    testWidgets('iPhone 17 safe-area $kind panel fits and dismisses outside', (tester) async {
+    testWidgets('iPhone 17 safe-area $kind panel fits and dismisses outside', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1206, 2622);
       tester.view.devicePixelRatio = 3;
       tester.view.padding = const FakeViewPadding(top: 186, bottom: 102);
       addTearDown(tester.view.reset);
-      final transport = kind == 'superchat' ? ScTransport() : ActivityTransport();
+      final transport = kind == 'superchat'
+          ? ScTransport()
+          : ActivityTransport();
       final account = LiveGiftAccount(100, FakeLoginIdentity(), 'test');
-      final gifts = LiveGiftService(roomId: 200, anchorUid: 300, transport: transport,
-        journal: FakeJournal(), currentAccount: () => account);
-      await tester.pumpWidget(preview((_) => switch (kind) {
-        'profile' => LiveUserPanel(item: DanmakuMsg(name: '测试观众', text: '测试弹幕',
-          extra: const LiveDanmaku(mid: 123, id: '1', dmType: 0, ts: 0, ct: ''),
-          badges: const LiveUserBadges(wealth: 37, medalName: '汐音', medalLevel: 27, title: '测试头衔')),
-          loader: (_) async => const LiveProfileInfo(name: '测试观众', followers: 55, following: 51)),
-        'red-packet' => LiveRedPacketPanel(service: LiveRedPacketService(gifts), anchorName: '测试主播'),
-        _ => LiveSuperChatPurchasePanel(service: LiveSuperChatService(gifts), anchorName: '测试主播'),
-      }));
+      final gifts = LiveGiftService(
+        roomId: 200,
+        anchorUid: 300,
+        transport: transport,
+        journal: FakeJournal(),
+        currentAccount: () => account,
+      );
+      await tester.pumpWidget(
+        preview(
+          (_) => switch (kind) {
+            'profile' => LiveUserPanel(
+              item: DanmakuMsg(
+                name: '测试观众',
+                text: '测试弹幕',
+                extra: const LiveDanmaku(
+                  mid: 123,
+                  id: '1',
+                  dmType: 0,
+                  ts: 0,
+                  ct: '',
+                ),
+                badges: const LiveUserBadges(
+                  wealth: 37,
+                  medalName: '汐音',
+                  medalLevel: 27,
+                  title: '测试头衔',
+                ),
+              ),
+              loader: (_) async => const LiveProfileInfo(
+                name: '测试观众',
+                followers: 55,
+                following: 51,
+              ),
+            ),
+            'red-packet' => LiveRedPacketPanel(
+              service: LiveRedPacketService(gifts),
+              anchorName: '测试主播',
+            ),
+            _ => LiveSuperChatPurchasePanel(
+              service: LiveSuperChatService(gifts),
+              anchorName: '测试主播',
+            ),
+          },
+        ),
+      );
       await tester.tap(find.text('打开面板'));
       await tester.pumpAndSettle();
       final panel = find.byKey(const ValueKey('live-panel-surface'));
       expect(tester.getSize(panel).width, 402);
-      expect(tester.getTopLeft(panel).dy, greaterThanOrEqualTo(tester.getBottomRight(find.byKey(const ValueKey('video-region'))).dy));
+      expect(
+        tester.getTopLeft(panel).dy,
+        greaterThanOrEqualTo(
+          tester.getBottomRight(find.byKey(const ValueKey('video-region'))).dy,
+        ),
+      );
       expect(tester.takeException(), isNull);
       await capture(tester, 'ios17-$kind');
       await tester.tapAt(const Offset(20, 150));

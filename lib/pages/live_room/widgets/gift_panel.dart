@@ -422,13 +422,6 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
                                         if (gift.isRedPacket &&
                                             widget.onRedPacket != null) {
                                           _openRedPacket();
-                                        } else if (!available) {
-                                          setState(() {
-                                            _selected = gift;
-                                            _bagItem = bag;
-                                            _quantity.text = '1';
-                                            _message = null;
-                                          });
                                         } else {
                                           setState(() {
                                             _selected = gift;

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:PiliPlus/utils/storage.dart';
+import 'package:PiliPlus/utils/accounts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
 
@@ -13,6 +14,10 @@ void setUpLiveProfileStorage() {
     Hive.init(directory.path);
     GStorage.localCache = await Hive.openBox<dynamic>('localCache');
     GStorage.setting = await Hive.openBox<dynamic>('setting');
+    // Initialize the anonymous identity outside WidgetTester's fake clock;
+    // its first read may persist a generated device identifier.
+    expect(Accounts.main.isLogin, isFalse);
+    await GStorage.localCache.flush();
   });
   tearDownAll(() async {
     await Hive.close();
