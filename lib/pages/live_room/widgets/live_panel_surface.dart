@@ -177,8 +177,12 @@ class LivePanelSurface extends StatelessWidget {
             backgroundColor: Colors.white.withValues(alpha: .06),
             selectedColor: accent.withValues(alpha: .18),
             disabledColor: Colors.white.withValues(alpha: .04),
-            labelStyle: base.textTheme.labelLarge?.copyWith(color: Colors.white70),
-            secondaryLabelStyle: base.textTheme.labelLarge?.copyWith(color: accent),
+            labelStyle: base.textTheme.labelLarge?.copyWith(
+              color: Colors.white70,
+            ),
+            secondaryLabelStyle: base.textTheme.labelLarge?.copyWith(
+              color: accent,
+            ),
             side: const BorderSide(color: Colors.white24),
           ),
         ),
