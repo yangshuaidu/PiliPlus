@@ -392,11 +392,23 @@ void main() {
           matching: find.byType(Switch),
         );
         await tester.ensureVisible(toggle);
+        await tester.pumpAndSettle();
         await tester.tap(toggle);
         await tester.pumpAndSettle();
         expect(tester.widget<SwitchListTile>(target).value, isFalse);
-        await tester.ensureVisible(find.text('恢复本页分类默认值'));
+        final scrolling = find.descendant(
+          of: find.byType(LiveSettingsPanel),
+          matching: find.byType(Scrollable),
+        );
+        await tester.scrollUntilVisible(
+          find.text('恢复本页分类默认值'),
+          64,
+          scrollable: scrolling,
+        );
+        await tester.pumpAndSettle();
         await tester.tap(find.text('恢复本页分类默认值'));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(target, -64, scrollable: scrolling);
         await tester.pumpAndSettle();
         expect(tester.widget<SwitchListTile>(target).value, isTrue);
         expect(tester.takeException(), isNull);
