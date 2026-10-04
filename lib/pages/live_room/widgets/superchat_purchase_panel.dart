@@ -33,7 +33,11 @@ Future<void> showLiveSuperChatPurchase(
   );
   final service = LiveSuperChatService(gifts);
   try {
-    await showLivePanel<void>(context, (_) => LiveSuperChatPurchasePanel(service: service, anchorName: anchorName));
+    await showLivePanel<void>(
+      context,
+      (_) =>
+          LiveSuperChatPurchasePanel(service: service, anchorName: anchorName),
+    );
   } finally {
     service.dispose();
     gifts.dispose();

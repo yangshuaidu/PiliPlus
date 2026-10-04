@@ -33,8 +33,15 @@ Future<void> showLiveGiftPanel(
   );
   if (redPacket) {
     final red = LiveRedPacketService(service);
-    try { await showLivePanel<void>(context, (_) => LiveRedPacketPanel(service: red, anchorName: anchorName)); }
-    finally { red.dispose(); service.dispose(); }
+    try {
+      await showLivePanel<void>(
+        context,
+        (_) => LiveRedPacketPanel(service: red, anchorName: anchorName),
+      );
+    } finally {
+      red.dispose();
+      service.dispose();
+    }
     return;
   }
   try {
@@ -49,7 +56,13 @@ Future<void> showLiveGiftPanel(
         onRedPacket: () async {
           final redPackets = LiveRedPacketService(service);
           try {
-            await showLivePanel<void>(context, (_) => LiveRedPacketPanel(service: redPackets, anchorName: anchorName));
+            await showLivePanel<void>(
+              context,
+              (_) => LiveRedPacketPanel(
+                service: redPackets,
+                anchorName: anchorName,
+              ),
+            );
           } finally {
             redPackets.dispose();
           }

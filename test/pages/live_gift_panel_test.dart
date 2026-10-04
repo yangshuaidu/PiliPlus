@@ -137,6 +137,7 @@ void main() {
       await tester.tap(find.text('航海礼物'));
       await tester.pumpAndSettle();
       expect(find.text('需要大航海权限'), findsOneWidget);
+      expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, '赠送')).onPressed, isNull);
       expect(transport.postCount, 0);
     },
   );

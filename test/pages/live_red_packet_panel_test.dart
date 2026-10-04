@@ -7,7 +7,38 @@ import 'package:material_ui/material_ui.dart';
 import '../support/live_gift_fakes.dart';
 import '../support/live_room_actions_fakes.dart';
 
+class RecoveringRedTransport extends ActivityTransport {
+  bool limited = true;
+  @override
+  Future<Map<String, dynamic>> get(String path, Map<String, dynamic> query, LiveGiftAccount account) {
+    if (limited && path.endsWith('/RedPocketDetail')) {
+      return Future.value({'code': -1, 'message': '红包数量超过限制'});
+    }
+    return super.get(path, query, account);
+  }
+}
+
 void main() {
+  testWidgets('successful refresh clears a previous server limit error', (tester) async {
+    final transport = RecoveringRedTransport();
+    final account = LiveGiftAccount(100, FakeLoginIdentity(), 'test');
+    final gifts = LiveGiftService(roomId: 200, anchorUid: 300, transport: transport,
+      journal: FakeJournal(), currentAccount: () => account);
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: LiveRedPacketPanel(
+      service: LiveRedPacketService(gifts), anchorName: '测试主播'))));
+    await tester.pumpAndSettle();
+    expect(find.text('红包数量超过限制'), findsOneWidget);
+    transport.limited = false;
+    await tester.tap(find.text('刷新套餐'));
+    await tester.pumpAndSettle();
+    expect(find.text('红包数量超过限制'), findsNothing);
+    expect(find.byType(ListTile), findsWidgets);
+    expect(transport.postCount, 0);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    gifts.dispose();
+  });
+
   testWidgets('native red packet tabs and confirmation fit narrow screen', (
     tester,
   ) async {

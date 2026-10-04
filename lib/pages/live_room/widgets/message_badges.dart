@@ -15,38 +15,47 @@ List<InlineSpan> liveBadgeSpans(
           child: GestureDetector(
             onTap: onTap,
             child: Tooltip(
-            message: tip ?? label,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (icon != null) ...[
-                    Icon(icon, size: 11, color: color.computeLuminance() > .18 ? Colors.black87 : Colors.white),
-                    const SizedBox(width: 2),
-                  ],
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 105),
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11,
-                        height: 1.1,
-                        color: color.computeLuminance() > .18 ? Colors.black87 : Colors.white,
-                        fontWeight: FontWeight.bold,
+              message: tip ?? label,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (icon != null) ...[
+                      Icon(
+                        icon,
+                        size: 11,
+                        color: color.computeLuminance() > .18
+                            ? Colors.black87
+                            : Colors.white,
+                      ),
+                      const SizedBox(width: 2),
+                    ],
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 105),
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          height: 1.1,
+                          color: color.computeLuminance() > .18
+                              ? Colors.black87
+                              : Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          )),
+          ),
         ),
       );
   final guard = const {1: '总督', 2: '提督', 3: '舰长'}[badges.guard];
@@ -84,13 +93,16 @@ List<InlineSpan> liveBadgeSpans(
         alignment: PlaceholderAlignment.middle,
         child: Padding(
           padding: const EdgeInsets.only(right: 4),
-          child: GestureDetector(onTap: onTap, child: Image.network(
-            badges.titleImage,
-            width: 72,
-            height: 22,
-            errorBuilder: (_, _, _) =>
-                const Text('头衔', style: TextStyle(fontSize: 10)),
-          )),
+          child: GestureDetector(
+            onTap: onTap,
+            child: Image.network(
+              badges.titleImage,
+              width: 72,
+              height: 22,
+              errorBuilder: (_, _, _) =>
+                  const Text('头衔', style: TextStyle(fontSize: 10)),
+            ),
+          ),
         ),
       )
     else if (badges.title.isNotEmpty)

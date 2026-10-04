@@ -31,10 +31,18 @@ Future<void> showLiveActionMenu(
                     _ActionGrid(actions: sharing, columns: 3),
                     const Divider(height: 24),
                   ],
-                  LayoutBuilder(builder: (context, constraints) {
-                    final largeText = MediaQuery.textScalerOf(context).scale(12) > 17;
-                    return _ActionGrid(actions: actions, columns: largeText || constraints.maxWidth < 330 ? 3 : 4);
-                  }),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final largeText =
+                          MediaQuery.textScalerOf(context).scale(12) > 17;
+                      return _ActionGrid(
+                        actions: actions,
+                        columns: largeText || constraints.maxWidth < 330
+                            ? 3
+                            : 4,
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -68,11 +76,21 @@ class _ActionGrid extends StatelessWidget {
                 child: Column(
                   children: [
                     DecoratedBox(
-                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: .07), shape: BoxShape.circle),
-                      child: SizedBox.square(dimension: 46, child: Icon(action.icon, size: 23, color: Colors.white)),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .07),
+                        shape: BoxShape.circle,
+                      ),
+                      child: SizedBox.square(
+                        dimension: 46,
+                        child: Icon(action.icon, size: 23, color: Colors.white),
+                      ),
                     ),
                     const SizedBox(height: 8),
-                    Text(action.label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, height: 1.3)),
+                    Text(
+                      action.label,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 12, height: 1.3),
+                    ),
                   ],
                 ),
               ),
@@ -91,14 +109,38 @@ class LiveSheetHeading extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     children: [
       const SizedBox(height: 9),
-      Container(width: 32, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+      Container(
+        width: 32,
+        height: 4,
+        decoration: BoxDecoration(
+          color: Colors.white24,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
       Padding(
         padding: const EdgeInsets.only(left: 16, right: 8),
         child: Row(
           children: [
-            if (onBack != null) IconButton(tooltip: '返回', onPressed: onBack, icon: const Icon(Icons.chevron_left)),
-            Expanded(child: Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500))),
-            IconButton(tooltip: '关闭', onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close, size: 21)),
+            if (onBack != null)
+              IconButton(
+                tooltip: '返回',
+                onPressed: onBack,
+                icon: const Icon(Icons.chevron_left),
+              ),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            IconButton(
+              tooltip: '关闭',
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.close, size: 21),
+            ),
           ],
         ),
       ),

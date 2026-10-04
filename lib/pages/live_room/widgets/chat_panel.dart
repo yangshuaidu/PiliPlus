@@ -184,7 +184,7 @@ class LiveRoomChatPanel extends StatelessWidget {
                           onTap: () => _openMessage(context, item),
                           child: Container(
                           constraints: const BoxConstraints(minHeight: 40),
-                          padding: const .symmetric(
+                          padding: EdgeInsets.symmetric(
                             horizontal: isPP ? 8 : 0,
                             vertical: 4,
                           ),

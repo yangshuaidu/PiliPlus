@@ -93,8 +93,14 @@ class LiveUserBadges {
       manager: liveBool(data['isadmin'] ?? _at(_at(info, 2), 2)) == true,
       title: titleName,
       titleId: titleValue,
-      medalAnchorUid: liveInt(medal['ruid'] ?? medal['target_id'] ?? _at(oldMedal, 12)) ?? 0,
-      medalRoomId: liveInt(medal['room_id'] ?? medal['anchor_roomid'] ?? _at(oldMedal, 3)) ?? 0,
+      medalAnchorUid:
+          liveInt(medal['ruid'] ?? medal['target_id'] ?? _at(oldMedal, 12)) ??
+          0,
+      medalRoomId:
+          liveInt(
+            medal['room_id'] ?? medal['anchor_roomid'] ?? _at(oldMedal, 3),
+          ) ??
+          0,
       medalAnchorName: '${medal['anchor_uname'] ?? _at(oldMedal, 2) ?? ''}',
       titleImage: liveAssetUrl(title['url'] ?? title['image']),
       medalName: light == 0

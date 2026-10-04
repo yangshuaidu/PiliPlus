@@ -421,11 +421,12 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
                                             widget.onRedPacket != null) {
                                           _openRedPacket();
                                         } else if (!available) {
-                                          setState(
-                                            () => _message =
-                                                gift.unavailableReason ??
-                                                '礼物已过期或不可赠送',
-                                          );
+                                          setState(() {
+                                            _selected = gift;
+                                            _bagItem = bag;
+                                            _quantity.text = '1';
+                                            _message = null;
+                                          });
                                         } else {
                                           setState(() {
                                             _selected = gift;

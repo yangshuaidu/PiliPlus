@@ -102,15 +102,33 @@ class LiveHeaderControlState extends State<LiveHeaderControl>
     }
     child = Expanded(child: child);
 
-    if (!isFullScreen && !plPlayerController.isDesktopPip) return const SizedBox.shrink();
-    return Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), child: Row(children: [
-      IconButton(tooltip: '返回', onPressed: () {
-        if (plPlayerController.isDesktopPip) { plPlayerController.exitDesktopPip(); }
-        else { plPlayerController.triggerFullScreen(status: false); }
-      }, icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22)),
-      child, ...?timeBatteryWidgets,
-      IconButton(tooltip: '更多', onPressed: widget.onMore, icon: const Icon(Icons.more_horiz, color: Colors.white)),
-    ]));
+    if (!isFullScreen && !plPlayerController.isDesktopPip)
+      return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: '返回',
+            onPressed: () {
+              if (plPlayerController.isDesktopPip) {
+                plPlayerController.exitDesktopPip();
+              } else {
+                plPlayerController.triggerFullScreen(status: false);
+              }
+            },
+            icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
+          ),
+          child,
+          ...?timeBatteryWidgets,
+          IconButton(
+            tooltip: '更多',
+            onPressed: widget.onMore,
+            icon: const Icon(Icons.more_horiz, color: Colors.white),
+          ),
+        ],
+      ),
+    );
   }
 
   static void showStream(BuildContext context, LiveRoomController controller) {

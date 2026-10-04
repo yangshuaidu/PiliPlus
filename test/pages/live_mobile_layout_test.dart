@@ -218,7 +218,11 @@ void main() {
     expect(prefs.enabled(LiveRoomOption.entryNotices), isTrue);
   });
 
-  for (final size in [const Size(402, 874), const Size(393, 852), const Size(360, 640)]) {
+  for (final size in [
+    const Size(402, 874),
+    const Size(393, 852),
+    const Size(360, 640),
+  ]) {
     testWidgets(
       'gift panel preserves portrait video and separates same-name IDs at $size',
       (tester) async {
