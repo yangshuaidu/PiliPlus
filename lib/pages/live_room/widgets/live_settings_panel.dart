@@ -117,92 +117,92 @@ class _LiveSettingsPanelState extends State<LiveSettingsPanel> {
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_section == LiveSettingsSection.danmaku) ...[
-                ?widget.danmakuVisibility,
-                ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                  title: const Text(
-                    '字体、透明度与显示区域',
-                    style: TextStyle(fontSize: 14, height: 1.4),
+              children: [
+                if (_section == LiveSettingsSection.danmaku) ...[
+                  ?widget.danmakuVisibility,
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                    title: const Text(
+                      '字体、透明度与显示区域',
+                      style: TextStyle(fontSize: 14, height: 1.4),
+                    ),
+                    trailing: const Icon(Icons.chevron_right, size: 20),
+                    onTap: widget.onDisplaySettings,
                   ),
-                  trailing: const Icon(Icons.chevron_right, size: 20),
-                  onTap: widget.onDisplaySettings,
+                ],
+                Obx(
+                  () => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final option in LiveRoomOption.values)
+                        if (option.section == _section)
+                          SwitchListTile.adaptive(
+                            key: ValueKey(option.name),
+                            controlAffinity: ListTileControlAffinity.trailing,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                            ),
+                            title: Text(
+                              option.label,
+                              style: const TextStyle(fontSize: 14, height: 1.4),
+                            ),
+                            subtitle: _description(option) == null
+                                ? null
+                                : Text(
+                                    _description(option)!,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      height: 1.4,
+                                      color: Colors.white54,
+                                    ),
+                                  ),
+                            value:
+                                option == LiveRoomOption.superChats &&
+                                    !widget.superChatAvailable
+                                ? false
+                                : widget.settings.enabled(option),
+                            onChanged:
+                                option == LiveRoomOption.superChats &&
+                                    !widget.superChatAvailable
+                                ? null
+                                : (value) => widget.settings.set(option, value),
+                          ),
+                      if (widget.settings.saveError.value case final error?)
+                        Text(
+                          error,
+                          style: const TextStyle(
+                            color: Colors.orangeAccent,
+                            height: 1.4,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (_section == LiveSettingsSection.danmaku)
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                    title: const Text(
+                      '管理屏蔽词与用户',
+                      style: TextStyle(fontSize: 14, height: 1.4),
+                    ),
+                    trailing: const Icon(Icons.chevron_right, size: 20),
+                    onTap: widget.onBlockRules,
+                  ),
+                const Divider(),
+                TextButton(
+                  onPressed: () => widget.settings.reset(_section),
+                  child: const Text('恢复本页分类默认值'),
+                ),
+                const Text(
+                  '自动保存 · 适用于所有直播间',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    height: 1.4,
+                    color: Colors.white38,
+                  ),
                 ),
               ],
-              Obx(
-                () => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final option in LiveRoomOption.values)
-                      if (option.section == _section)
-                        SwitchListTile.adaptive(
-                          key: ValueKey(option.name),
-                          controlAffinity: ListTileControlAffinity.trailing,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                          ),
-                          title: Text(
-                            option.label,
-                            style: const TextStyle(fontSize: 14, height: 1.4),
-                          ),
-                          subtitle: _description(option) == null
-                              ? null
-                              : Text(
-                                  _description(option)!,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    height: 1.4,
-                                    color: Colors.white54,
-                                  ),
-                                ),
-                          value:
-                              option == LiveRoomOption.superChats &&
-                                  !widget.superChatAvailable
-                              ? false
-                              : widget.settings.enabled(option),
-                          onChanged:
-                              option == LiveRoomOption.superChats &&
-                                  !widget.superChatAvailable
-                              ? null
-                              : (value) => widget.settings.set(option, value),
-                        ),
-                    if (widget.settings.saveError.value case final error?)
-                      Text(
-                        error,
-                        style: const TextStyle(
-                          color: Colors.orangeAccent,
-                          height: 1.4,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              if (_section == LiveSettingsSection.danmaku)
-                ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                  title: const Text(
-                    '管理屏蔽词与用户',
-                    style: TextStyle(fontSize: 14, height: 1.4),
-                  ),
-                  trailing: const Icon(Icons.chevron_right, size: 20),
-                  onTap: widget.onBlockRules,
-                ),
-              const Divider(),
-              TextButton(
-                onPressed: () => widget.settings.reset(_section),
-                child: const Text('恢复本页分类默认值'),
-              ),
-              const Text(
-                '自动保存 · 适用于所有直播间',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  height: 1.4,
-                  color: Colors.white38,
-                ),
-              ),
-            ],
             ),
           ),
         ),
