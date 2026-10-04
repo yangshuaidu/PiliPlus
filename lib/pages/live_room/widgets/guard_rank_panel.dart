@@ -18,7 +18,7 @@ class LiveGuardRankPanel extends StatefulWidget {
   final int roomId, ruid;
   final bool embedded;
   final Future<LoadingState<Map<String, dynamic>>> Function(int type, int page)?
-      loadRank;
+  loadRank;
   @override
   State<LiveGuardRankPanel> createState() => _LiveGuardRankPanelState();
 }
@@ -52,13 +52,14 @@ class _LiveGuardRankPanelState extends State<LiveGuardRankPanel> {
       }
     });
     try {
-      final result = await (widget.loadRank?.call(_type, page) ??
-          LiveHttp.liveGuardRank(
-            roomId: widget.roomId,
-            ruid: widget.ruid,
-            page: page,
-            type: _type,
-          ));
+      final result =
+          await (widget.loadRank?.call(_type, page) ??
+              LiveHttp.liveGuardRank(
+                roomId: widget.roomId,
+                ruid: widget.ruid,
+                page: page,
+                type: _type,
+              ));
       if (!mounted || generation != _generation) return;
       if (result case Success(:final response)) {
         final info = liveMap(response['info']);
@@ -162,7 +163,10 @@ class _LiveGuardRankPanelState extends State<LiveGuardRankPanel> {
               ),
               IconButton(
                 tooltip: '刷新榜单',
-                constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+                constraints: const BoxConstraints.tightFor(
+                  width: 30,
+                  height: 30,
+                ),
                 padding: EdgeInsets.zero,
                 onPressed: _busy ? null : () => _load(reset: true),
                 icon: const Icon(Icons.refresh, size: 17),
@@ -186,7 +190,10 @@ class _LiveGuardRankPanelState extends State<LiveGuardRankPanel> {
                 showCheckmark: false,
                 padding: EdgeInsets.zero,
                 labelPadding: const EdgeInsets.symmetric(horizontal: 9),
-                visualDensity: const VisualDensity(horizontal: -2, vertical: -4),
+                visualDensity: const VisualDensity(
+                  horizontal: -2,
+                  vertical: -4,
+                ),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 selected: _type == tab.key,
                 onSelected: (_) {

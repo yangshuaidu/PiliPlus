@@ -16,6 +16,7 @@ Future<void> showLiveGiftPanel(
   int? areaId,
   int? parentAreaId,
   bool redPacket = false,
+  double sourceAspectRatio = 16 / 9,
 }) async {
   if (!Accounts.main.isLogin) {
     SmartDialog.showToast('请先登录后再送礼');
@@ -48,6 +49,7 @@ Future<void> showLiveGiftPanel(
     await showLivePanel<void>(
       context,
       (context) => LiveGiftPanel(
+        sourceAspectRatio: sourceAspectRatio,
         service: service,
         anchorName: anchorName,
         onRecharge: () => PageUtils.launchURL(

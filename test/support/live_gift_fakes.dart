@@ -28,6 +28,7 @@ class FakeTransport implements LiveGiftTransport {
   void Function()? onCatalogRead;
   Map<String, dynamic>? response;
   Map<String, dynamic>? catalogData;
+  Map<String, dynamic>? fansMedal;
   Completer<void>? postGate;
   final postStarted = Completer<void>();
 
@@ -76,6 +77,7 @@ class FakeTransport implements LiveGiftTransport {
       },
       LiveGiftService.walletPath => {
         'wallet': {'gold': balance},
+        if (fansMedal != null) 'fans_medal': fansMedal,
       },
       _ => throw StateError('Unexpected read: $path'),
     };

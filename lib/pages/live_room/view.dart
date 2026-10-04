@@ -1,3 +1,6 @@
+import 'package:PiliPlus/pages/live_room/widgets/room_composer.dart';
+import 'package:PiliPlus/pages/live_room/widgets/room_header.dart';
+import 'package:PiliPlus/pages/live_room/widgets/mobile_room_layout.dart';
 import 'package:PiliPlus/pages/live_room/widgets/live_action_menu.dart';
 import 'package:PiliPlus/pages/live_room/widgets/live_panel_surface.dart';
 import 'package:PiliPlus/pages/live_room/widgets/superchat_purchase_panel.dart';
@@ -51,7 +54,6 @@ import 'package:PiliPlus/plugin/pl_player/utils/fullscreen.dart';
 import 'package:PiliPlus/plugin/pl_player/view/view.dart';
 import 'package:PiliPlus/services/service_locator.dart';
 import 'package:PiliPlus/utils/android/bindings.g.dart';
-import 'package:PiliPlus/utils/extension/num_ext.dart';
 import 'package:PiliPlus/utils/extension/size_ext.dart';
 import 'package:PiliPlus/utils/image_utils.dart';
 import 'package:PiliPlus/utils/max_screen_size.dart';
@@ -478,54 +480,25 @@ class _LiveRoomPageState extends State<LiveRoomPage>
       return Stack(
         clipBehavior: Clip.none,
         children: [
-          const SizedBox.expand(child: ColoredBox(color: Colors.black)),
-          if (!isFullScreen)
-            Obx(
-              () {
-                final appBackground = _liveRoomController
-                    .roomInfoH5
-                    .value
-                    ?.roomInfo
-                    ?.appBackground;
-                if (appBackground == null || appBackground.isEmpty) {
-                  return const SizedBox.shrink();
-                }
-                return Positioned.fill(
-                  child: CachedNetworkImage(
-                    fit: BoxFit.cover,
-                    width: maxWidth,
-                    height: maxHeight,
-                    memCacheWidth: maxWidth.cacheSize(context),
-                    imageUrl: ImageUtils.safeThumbnailUrl(appBackground),
-                    placeholder: (_, _) => const SizedBox.shrink(),
-                    errorWidget: (_, _, _) => const SizedBox.shrink(),
-                  ),
-                );
-              },
-            ),
-          if (isPortrait &&
-              _liveRoomController.usePortraitOverlay &&
-              !isFullScreen)
-            Positioned.fill(
-              child: Stack(
-                children: [
-                  Positioned.fill(child: _buildPP(false)),
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: Obx(
-                      () => _liveRoomController.cleanScreen.value
-                          ? const SizedBox.shrink()
-                          : SizedBox(
-                              height: padding.top + 62,
-                              child: _buildAppBar(false),
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-            )
+          Positioned.fill(child: Obx(() {
+            final url = _liveRoomController.roomInfoH5.value?.roomInfo?.appBackground;
+            return LiveRoomBackdrop(image: !isFullScreen && url != null && url.isNotEmpty
+              ? CachedNetworkImageProvider(ImageUtils.safeThumbnailUrl(url)) : null);
+          })),
+          if (isPortrait && !isFullScreen)
+            Positioned.fill(child: LiveMobileRoomLayout(
+              portraitSource: _liveRoomController.usePortraitOverlay,
+              aspectRatio: _liveRoomController.sourceAspectRatio.value,
+              padding: padding,
+              header: _buildAppBar(false),
+              videoBuilder: (size) => videoPlayerPanel(false,
+                width: size.width, height: size.height,
+                needDm: !_liveRoomController.usePortraitOverlay),
+              chat: _buildChatWidget(_liveRoomController.usePortraitOverlay),
+              composer: _buildInputWidget,
+              cleanScreen: _liveRoomController.cleanScreen.value,
+              onCleanScreen: _liveRoomController.cleanScreen.toggle,
+            ))
           else
             ScaffoldLayout(
               appBar: isWindowMode && isFullScreen && !isPortrait
@@ -664,46 +637,12 @@ class _LiveRoomPageState extends State<LiveRoomPage>
     },
   );
 
-  Widget get onlineWidget => GestureDetector(
+  Widget get onlineWidget => Obx(() => LiveAudienceButton(
     onTap: _showRank,
-    behavior: HitTestBehavior.opaque,
-    child: Obx(() {
-      final viewers = _liveRoomController.topViewers.take(3).toList();
-      return Tooltip(
-        message: '观众与大航海榜',
-        child: SizedBox(
-          height: 40,
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            if (viewers.isNotEmpty)
-              SizedBox(
-                width: 27 + (viewers.length - 1) * 20,
-                height: 27,
-                child: Stack(children: [
-                  for (final (index, viewer) in viewers.indexed)
-                    Positioned(left: index * 20.0, child: Container(
-                      width: 27, height: 27,
-                      decoration: BoxDecoration(shape: BoxShape.circle,
-                        border: Border.all(color: const [Color(0xFFE2BA69), Color(0xFFC2CDD9), Color(0xFFC3947C)][index], width: 1.5)),
-                      child: NetworkImgLayer(src: viewer.face, width: 24, height: 24, type: .avatar),
-                    )),
-                ]),
-              ),
-            const SizedBox(width: 3),
-            Container(
-              width: 28, height: 28,
-              padding: const EdgeInsets.all(3),
-              decoration: const BoxDecoration(color: Color(0x55212B36), shape: BoxShape.circle),
-              alignment: Alignment.center,
-              child: FittedBox(fit: BoxFit.scaleDown, child: Text(
-                _liveRoomController.onlineCount.value ?? '观众',
-                style: const TextStyle(fontSize: 10, color: Colors.white),
-              )),
-            ),
-          ]),
-        ),
-      );
-    }),
-  );
+    count: _liveRoomController.onlineCount.value ?? '观众',
+    avatars: [for (final viewer in _liveRoomController.topViewers.take(3))
+      NetworkImgLayer(src: viewer.face, width: 24, height: 24, type: .avatar)],
+  ));
 
   void _showRank() {
     final live = _liveRoomController;
@@ -846,6 +785,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
       areaId: live.roomInfoH5.value?.roomInfo?.areaId,
       parentAreaId: live.roomInfoH5.value?.roomInfo?.parentAreaId,
       redPacket: redPacket,
+      sourceAspectRatio: live.usePortraitOverlay ? 9 / 16 : live.sourceAspectRatio.value,
     );
   }
 
@@ -1032,59 +972,16 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                 if (roomInfoH5 == null) {
                   return const SizedBox.shrink();
                 }
-                return GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () =>
-                      Get.toNamed('/member?mid=${roomInfoH5.roomInfo?.uid}'),
-                  child: Row(
-                    spacing: 10,
-                    mainAxisSize: .min,
-                    children: [
-                      NetworkImgLayer(
-                        width: 34,
-                        height: 34,
-                        type: .avatar,
-                        src: roomInfoH5.anchorInfo!.baseInfo!.face,
-                      ),
-                      Flexible(
-                        child: Column(
-                          spacing: 1,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              spacing: 10,
-                              mainAxisSize: .min,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    roomInfoH5.anchorInfo!.baseInfo!.uname!,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              spacing: 10,
-                              mainAxisSize: .min,
-                              children: [
-                                Flexible(
-                                  child: _liveRoomController.watchedWidget,
-                                ),
-                                if (!compactHeader)
-                                  _liveRoomController.timeWidget,
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                final relation = _liveRoomController.anchorRelation.value;
+                return LiveAnchorChip(
+                  avatar: NetworkImgLayer(width: 34, height: 34, type: .avatar,
+                    src: roomInfoH5.anchorInfo?.baseInfo?.face),
+                  name: roomInfoH5.anchorInfo?.baseInfo?.uname ?? '主播',
+                  subtitle: _liveRoomController.watchedShow.value ?? '直播间',
+                  followed: relation == 2 || relation == 6,
+                  onProfile: () => Get.toNamed('/member?mid=${roomInfoH5.roomInfo?.uid}'),
+                  onFollow: _liveRoomController.followingAnchor.value ? null :
+                    () => _liveRoomController.followAnchor(context),
                 );
               },
             ),
@@ -1201,52 +1098,12 @@ class _LiveRoomPageState extends State<LiveRoomPage>
   }
 
   Widget get _buildInputWidget {
-    final child = Padding(
-      padding: EdgeInsets.fromLTRB(12, 5, 12, 5 + padding.bottom),
-      child: SizedBox(
-        height: 34,
-        child: Row(
-          children: [
-            Expanded(
-              child: Material(
-                color: const Color(0x70263041),
-                borderRadius: BorderRadius.circular(24),
-                child: InkWell(
-                  onTap: _liveRoomController.onSendDanmaku,
-                  borderRadius: BorderRadius.circular(24),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 14),
-                      const Expanded(
-                        child: Text(
-                          '发个弹幕聊聊',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 13, color: Colors.white70),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: '表情弹幕',
-                        constraints: const BoxConstraints.tightFor(
-                          width: 34,
-                          height: 34,
-                        ),
-                        padding: EdgeInsets.zero,
-                        onPressed: () =>
-                            _liveRoomController.onSendDanmaku(true),
-                        icon: const Icon(
-                          Icons.emoji_emotions_outlined,
-                          color: Colors.white70,
-                          size: 22,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            Builder(
+    final child = LiveRoomComposer(
+      bottomPadding: padding.bottom,
+      onCompose: _liveRoomController.onSendDanmaku,
+      onEmoji: () => _liveRoomController.onSendDanmaku(true),
+      onGift: _showGifts,
+      likeButton: Builder(
               builder: (context) {
                 final isLogin = kDebugMode || _liveRoomController.isLogin;
                 return Material(
@@ -1300,41 +1157,6 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                 );
               },
             ),
-            const SizedBox(width: 6),
-            IconButton.filled(
-              tooltip: '礼物',
-              style: IconButton.styleFrom(
-                backgroundColor: const Color(0xFFFB7299),
-                foregroundColor: Colors.white,
-                fixedSize: const Size(34, 34),
-                minimumSize: const Size(34, 34),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                padding: EdgeInsets.zero,
-              ),
-              onPressed: () => showLiveGiftPanel(
-                context,
-                roomId: _liveRoomController.roomId,
-                anchorUid: _liveRoomController.ruid,
-                anchorName:
-                    _liveRoomController
-                        .roomInfoH5
-                        .value
-                        ?.anchorInfo
-                        ?.baseInfo
-                        ?.uname ??
-                    '当前主播',
-                areaId: _liveRoomController.roomInfoH5.value?.roomInfo?.areaId,
-                parentAreaId: _liveRoomController
-                    .roomInfoH5
-                    .value
-                    ?.roomInfo
-                    ?.parentAreaId,
-              ),
-              icon: const Icon(Icons.card_giftcard_rounded, size: 22),
-            ),
-          ],
-        ),
-      ),
     );
     if (_liveRoomController.showSuperChat) {
       return Stack(

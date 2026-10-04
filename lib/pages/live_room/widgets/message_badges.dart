@@ -68,9 +68,16 @@ List<InlineSpan> liveBadgeSpans(
         tip: '官方消息携带的榜单名次 ${badges.rank}',
       ),
     if (badges.wealth > 0)
-      WidgetSpan(alignment: PlaceholderAlignment.middle,
-        child: Padding(padding: const EdgeInsets.only(right: 4),
-          child: GestureDetector(onTap: onTap, child: LiveWealthBadge(level: badges.wealth)))),
+      WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: GestureDetector(
+            onTap: onTap,
+            child: LiveWealthBadge(level: badges.wealth),
+          ),
+        ),
+      ),
     if (guard != null)
       badge(
         guard,

@@ -9,12 +9,14 @@ class LiveGiftPanel extends StatefulWidget {
   final String anchorName;
   final VoidCallback? onRecharge;
   final Future<void> Function()? onRedPacket;
+  final double sourceAspectRatio;
   const LiveGiftPanel({
     super.key,
     required this.service,
     required this.anchorName,
     this.onRecharge,
     this.onRedPacket,
+    this.sourceAspectRatio = 16 / 9,
   });
   @override
   State<LiveGiftPanel> createState() => _LiveGiftPanelState();
@@ -241,46 +243,77 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
       canPop: !_busy,
       child: LivePanelSurface(
         gift: true,
+        sourceAspectRatio: widget.sourceAspectRatio,
         child: Column(
           children: [
             SizedBox(
               height: 52,
-              child: Row(children: [
-                Expanded(child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(left: 8),
-                  child: Row(children: [
-                    for (final group in groups)
-                      _tab(group.id == 'room' ? '礼物' : group.name,
-                        !_bag && selectedGroup?.id == group.id,
-                        () => _selectGroup(group.id)),
-                    _tab('包裹', _bag, () => setState(() {
-                      _bag = true; _selected = null; _bagItem = null; _message = null;
-                    })),
-                  ]),
-                )),
-                PopupMenuButton<bool>(
-                  tooltip: '按电池价格排序',
-                  enabled: !_busy && !_bag,
-                  initialValue: _priceDescending,
-                  onSelected: (value) => setState(() => _priceDescending = value),
-                  constraints: const BoxConstraints(minWidth: 150),
-                  padding: EdgeInsets.zero,
-                  iconSize: 19,
-                  icon: const Icon(Icons.swap_vert, size: 19),
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: false, child: Text('价格从低到高')),
-                    PopupMenuItem(value: true, child: Text('价格从高到低')),
-                  ],
-                ),
-                IconButton(tooltip: '刷新礼物', onPressed: _busy ? null : _load,
-                  constraints: const BoxConstraints.tightFor(width: 32, height: 36),
-                  padding: EdgeInsets.zero, icon: const Icon(Icons.refresh, size: 19)),
-                IconButton(tooltip: '关闭礼物', onPressed: _busy ? null : () => Navigator.pop(context),
-                  constraints: const BoxConstraints.tightFor(width: 32, height: 36),
-                  padding: EdgeInsets.zero, icon: const Icon(Icons.close, size: 19)),
-                const SizedBox(width: 4),
-              ]),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Row(
+                        children: [
+                          for (final group in groups)
+                            _tab(
+                              group.id == 'room' ? '礼物' : group.name,
+                              !_bag && selectedGroup?.id == group.id,
+                              () => _selectGroup(group.id),
+                            ),
+                          _tab(
+                            '包裹',
+                            _bag,
+                            () => setState(() {
+                              _bag = true;
+                              _selected = null;
+                              _bagItem = null;
+                              _message = null;
+                            }),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  PopupMenuButton<bool>(
+                    tooltip: '按电池价格排序',
+                    enabled: !_busy && !_bag,
+                    initialValue: _priceDescending,
+                    onSelected: (value) =>
+                        setState(() => _priceDescending = value),
+                    constraints: const BoxConstraints(minWidth: 150),
+                    padding: EdgeInsets.zero,
+                    iconSize: 19,
+                    icon: const Icon(Icons.swap_vert, size: 19),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: false, child: Text('价格从低到高')),
+                      PopupMenuItem(value: true, child: Text('价格从高到低')),
+                    ],
+                  ),
+                  IconButton(
+                    tooltip: '刷新礼物',
+                    onPressed: _busy ? null : _load,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 32,
+                      height: 36,
+                    ),
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.refresh, size: 19),
+                  ),
+                  IconButton(
+                    tooltip: '关闭礼物',
+                    onPressed: _busy ? null : () => Navigator.pop(context),
+                    constraints: const BoxConstraints.tightFor(
+                      width: 32,
+                      height: 36,
+                    ),
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.close, size: 19),
+                  ),
+                  const SizedBox(width: 4),
+                ],
+              ),
             ),
             _medalProgress(snapshot?.medal),
             if (_busy && !_confirming)
@@ -534,36 +567,78 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
     key: const ValueKey('gift-medal-progress'),
     margin: const EdgeInsets.fromLTRB(12, 0, 12, 6),
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-    decoration: BoxDecoration(color: const Color(0xFF322E25),
-      borderRadius: BorderRadius.circular(8)),
-    child: Row(children: [
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min, children: [
-          Row(children: [
-            Expanded(child: Text(medal == null ? '粉丝勋章' : '${medal.name} Lv.${medal.level}',
-              maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, color: Color(0xFFF1D390)))),
-            if (medal?.fraction != null) Text('Lv.${medal!.level + 1}',
-              style: const TextStyle(fontSize: 10, color: Colors.white60)),
-          ]),
-          const SizedBox(height: 4),
-          LinearProgressIndicator(value: medal?.fraction ?? 0, minHeight: 3,
-            color: const Color(0xFFE8C46B), backgroundColor: Colors.white12),
-          const SizedBox(height: 4),
-          Text(medal?.remaining == null ? '亲密度进度暂未提供' : '升级还需 ${medal!.remaining} 亲密度',
-            maxLines: 1, overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 10, color: Colors.white60)),
-        ])),
-      const SizedBox(width: 12),
-      TextButton(
-        style: TextButton.styleFrom(foregroundColor: const Color(0xFFE8C46B),
-          padding: const EdgeInsets.symmetric(horizontal: 6), minimumSize: const Size(0, 30),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-        onPressed: _busy ? null : () => PageUtils.launchURL(
-          'https://live.bilibili.com/p/html/live-app-guard-info/index.html?uid=${widget.service.anchorUid}&is_live_webview=1'),
-        child: const Text('舰长权益', style: TextStyle(fontSize: 11)),
-      ),
-    ]),
+    decoration: BoxDecoration(
+      color: const Color(0xFF322E25),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      medal == null
+                          ? '粉丝勋章'
+                          : '${medal.name} Lv.${medal.level}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFFF1D390),
+                      ),
+                    ),
+                  ),
+                  if (medal?.fraction != null)
+                    Text(
+                      'Lv.${medal!.level + 1}',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.white60,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              LinearProgressIndicator(
+                value: medal?.fraction ?? 0,
+                minHeight: 3,
+                color: const Color(0xFFE8C46B),
+                backgroundColor: Colors.white12,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                medal?.remaining == null
+                    ? '亲密度进度暂未提供'
+                    : '升级还需 ${medal!.remaining} 亲密度',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 10, color: Colors.white60),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        TextButton(
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xFFE8C46B),
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            minimumSize: const Size(0, 30),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          onPressed: _busy
+              ? null
+              : () => PageUtils.launchURL(
+                  'https://live.bilibili.com/p/html/live-app-guard-info/index.html?uid=${widget.service.anchorUid}&is_live_webview=1',
+                ),
+          child: const Text('舰长权益', style: TextStyle(fontSize: 11)),
+        ),
+      ],
+    ),
   );
 
   Widget _footer() {

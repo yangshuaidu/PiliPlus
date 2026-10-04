@@ -1,3 +1,4 @@
+import 'package:PiliPlus/pages/live_room/widgets/chat_line.dart';
 import 'package:PiliPlus/pages/live_room/widgets/live_user_panel.dart';
 import 'package:PiliPlus/common/widgets/badge.dart';
 import 'package:PiliPlus/common/widgets/flutter/live_list_view.dart';
@@ -36,7 +37,6 @@ class LiveRoomChatPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const bg = Color(0x70263041);
     const nameColor = Color(0xFFA5DFEA);
     late final colorScheme = ColorScheme.of(context);
     late final primary = colorScheme.isDark
@@ -171,30 +171,9 @@ class LiveRoomChatPanel extends StatelessWidget {
                       }
                     }
                   }
-                  return Align(
-                    alignment: Alignment.centerLeft,
-                    child: Builder(
-                      builder: (itemContext) {
-                        return GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => _openMessage(context, item),
-                          child: Container(
-                            constraints: const BoxConstraints(minHeight: 24),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: bg,
-                              borderRadius: const .all(.circular(14)),
-                            ),
-                            child: Text.rich(
-                              style: const TextStyle(
-                                fontSize: 15,
-                                height: 1.35,
-                                color: Colors.white,
-                              ),
-                              TextSpan(
+                  return LiveChatLine(
+                    onTap: () => _openMessage(context, item),
+                    content:                               TextSpan(
                                 children: [
                                   if (showBadges)
                                     ...liveBadgeSpans(
@@ -253,11 +232,6 @@ class LiveRoomChatPanel extends StatelessWidget {
                                   _buildMsg(item),
                                 ],
                               ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
                   );
                 }
                 if (item is SuperChatItem) {

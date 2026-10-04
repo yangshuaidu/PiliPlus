@@ -19,6 +19,8 @@ import 'package:PiliPlus/common/widgets/flutter/text_field/controller.dart';
 import 'package:PiliPlus/http/live.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/video.dart';
+import 'package:PiliPlus/http/user.dart';
+import 'package:PiliPlus/utils/request_utils.dart';
 import 'package:PiliPlus/models/common/super_chat_type.dart';
 import 'package:PiliPlus/models/common/video/live_quality.dart';
 import 'package:PiliPlus/models_new/live/live_danmaku/danmaku_msg.dart';
@@ -80,6 +82,30 @@ class LiveRoomController extends GetxController {
   final sourceAspectRatio = (16 / 9).obs;
   final cleanScreen = false.obs;
   final roomInfoH5 = Rxn<RoomInfoH5Data>();
+  final anchorRelation = RxnInt();
+  final followingAnchor = false.obs;
+
+  Future<void> followAnchor(BuildContext context) async {
+    if (!Accounts.main.isLogin) { toastNotLogin(); return; }
+    final uid = ruid;
+    if (uid == null || followingAnchor.value) return;
+    final account = Accounts.main;
+    followingAnchor.value = true;
+    try {
+      final relation = await UserHttp.userRelation(uid);
+      if (!context.mounted || !identical(account, Accounts.main)) return;
+      if (relation case Success(:final response)) {
+        anchorRelation.value = response.attribute;
+        await RequestUtils.actionRelationMod(
+          context: context, mid: uid,
+          isFollow: response.attribute == 2 || response.attribute == 6,
+          afterMod: (value) {
+            if (identical(account, Accounts.main)) anchorRelation.value = value;
+          },
+        );
+      } else { relation.toast(); }
+    } finally { followingAnchor.value = false; }
+  }
 
   final liveTime = Rxn<int>();
   Timer? liveTimeTimer;
@@ -495,6 +521,17 @@ class LiveRoomController extends GetxController {
     final res = await LiveHttp.liveRoomInfoH5(roomId: roomId);
     if (res case Success(:final response)) {
       roomInfoH5.value = response;
+      final account = Accounts.main;
+      final uid = response.roomInfo?.uid;
+      anchorRelation.value = null;
+      if (account.isLogin && uid != null) {
+        UserHttp.userRelation(uid).then((value) {
+          if (!_closed && identical(account, Accounts.main) &&
+              roomInfoH5.value?.roomInfo?.uid == uid && value is Success) {
+            anchorRelation.value = value.response.attribute;
+          }
+        }).catchError((Object _) {});
+      }
       refreshTopViewers();
       title.value = response.roomInfo?.title ?? '';
       watchedShow.value = response.watchedShow?.textLarge;
