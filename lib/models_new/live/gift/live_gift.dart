@@ -119,6 +119,7 @@ class LiveGiftSnapshot {
   final List<LiveBagItem> bag;
   final LiveWallet wallet;
   final Map<String, String> errors;
+  final LiveMedalProgress? medal;
   const LiveGiftSnapshot({
     required this.accountIdentity,
     required this.accountUid,
@@ -127,7 +128,32 @@ class LiveGiftSnapshot {
     required this.bag,
     required this.wallet,
     required this.errors,
+    this.medal,
   });
+}
+
+/// Current intimacy, not the projected result of a gift purchase.
+class LiveMedalProgress {
+  const LiveMedalProgress({required this.name, required this.level,
+    this.intimacy, this.nextIntimacy});
+  final String name;
+  final int level;
+  final int? intimacy, nextIntimacy;
+  double? get fraction => intimacy != null && nextIntimacy != null && nextIntimacy! > 0
+      ? (intimacy! / nextIntimacy!).clamp(0.0, 1.0) : null;
+  int? get remaining => fraction == null ? null : (nextIntimacy! - intimacy!).clamp(0, nextIntimacy!);
+
+  static LiveMedalProgress? fromUserInfo(Map<String, dynamic> data, int anchorUid) {
+    final fans = liveMap(data['fans_medal']);
+    final medal = liveMap(fans['medal']);
+    // An equipped medal for another anchor is not this room's progress.
+    if (liveInt(medal['target_id']) != anchorUid) return null;
+    final level = liveInt(medal['level']);
+    final name = medal['medal_name'];
+    if (level == null || level <= 0 || name is! String || name.isEmpty) return null;
+    return LiveMedalProgress(name: name, level: level,
+      intimacy: liveInt(medal['intimacy']), nextIntimacy: liveInt(medal['next_intimacy']));
+  }
 }
 
 class LiveGiftConfirmation {

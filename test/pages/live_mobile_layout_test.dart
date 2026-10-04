@@ -266,7 +266,7 @@ void main() {
           find.byKey(const ValueKey('video-region')),
         );
         expect(panel.top, greaterThanOrEqualTo(video.bottom));
-        expect(panel.height, lessThanOrEqualTo(size.height * .5));
+        expect(panel.height, lessThanOrEqualTo(496));
         expect(find.byKey(const ValueKey('live-gift-31164-0')), findsOneWidget);
         expect(find.byKey(const ValueKey('live-gift-34001-0')), findsNothing);
         expect(find.text('粉丝团灯牌'), findsOneWidget);

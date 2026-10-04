@@ -76,8 +76,8 @@ class LiveRoomController extends GetxController {
 
   final isLoaded = false.obs;
   final playbackMessage = RxnString();
-  final portraitOverlay = RxnBool();
-  bool get usePortraitOverlay => portraitOverlay.value ?? isPortrait.value;
+  bool get usePortraitOverlay => isPortrait.value;
+  final sourceAspectRatio = (16 / 9).obs;
   final cleanScreen = false.obs;
   final roomInfoH5 = Rxn<RoomInfoH5Data>();
 
@@ -327,13 +327,14 @@ class LiveRoomController extends GetxController {
   StreamSubscription? _sizeSub;
 
   void _onSizeChanged((int, int) value) {
+    if (value.$1 <= 0 || value.$2 <= 0) return;
+    sourceAspectRatio.value = value.$1 / value.$2;
     final isVertical = value.$2 > value.$1;
     isPortrait.value = isVertical;
     plPlayerController.isVertical = isVertical;
   }
 
   void _startSizeSub() {
-    if (isPortrait.value) return;
     _stopSizeSub();
     _sizeSub = plPlayerController.videoPlayerController?.stream.size.listen(
       _onSizeChanged,

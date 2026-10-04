@@ -1,3 +1,4 @@
+import 'package:PiliPlus/pages/live_room/widgets/wealth_badge.dart';
 import 'package:PiliPlus/common/widgets/dialog/report_member.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/http/live.dart';
@@ -367,7 +368,10 @@ class _LiveUserPanelState extends State<LiveUserPanel> {
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 12),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: Colors.white70),
+            if (page == 'wealth')
+              LiveWealthBadge(level: int.tryParse(value) ?? 0, height: 24)
+            else
+              Icon(icon, size: 18, color: Colors.white70),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
@@ -398,11 +402,7 @@ class _LiveUserPanelState extends State<LiveUserPanel> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 15),
-          const Icon(
-            Icons.diamond_outlined,
-            size: 48,
-            color: Color(0xFFD0B3EA),
-          ),
+          Center(child: LiveWealthBadge(level: b.wealth, height: 40)),
           const SizedBox(height: 12),
           Text(
             '荣耀等级 ${b.wealth}',

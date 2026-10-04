@@ -8,7 +8,7 @@ const livePanelBackground = Color(0xFF1C1B23);
 
 /// Compact bottom panels in portrait; a trailing panel leaves the video visible
 /// in landscape. Keyboard space and safe areas are deducted before sizing.
-Size livePanelSize(MediaQueryData media) {
+Size livePanelSize(MediaQueryData media, {bool gift = false}) {
   final size = media.size;
   final height = math.max(
     0.0,
@@ -18,6 +18,8 @@ Size livePanelSize(MediaQueryData media) {
   if (side) return Size(math.min(420.0, size.width * .48), height);
   final desired = media.viewInsets.bottom > 0 || height < 400
       ? height * .9
+      : gift
+      ? math.min(496.0, math.min(height * .66, height - 70 - size.width / (16 / 9)))
       : math.min(420.0, height * .48);
   return Size(math.min(520.0, size.width), desired);
 }
@@ -54,12 +56,13 @@ Future<T?> showLivePanel<T>(BuildContext context, WidgetBuilder builder) =>
     );
 
 class LivePanelSurface extends StatelessWidget {
-  const LivePanelSurface({super.key, required this.child});
+  const LivePanelSurface({super.key, required this.child, this.gift = false});
   final Widget child;
+  final bool gift;
 
   @override
   Widget build(BuildContext context) {
-    final size = livePanelSize(MediaQuery.of(context));
+    final size = livePanelSize(MediaQuery.of(context), gift: gift);
     final base = Theme.of(context);
     final colors = ColorScheme.fromSeed(
       seedColor: liveAccent,

@@ -16,8 +16,6 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:PiliPlus/common/assets.dart';
-import 'package:PiliPlus/common/style.dart';
 import 'package:PiliPlus/common/widgets/button/icon_button.dart';
 import 'package:PiliPlus/common/widgets/extra_hittest_stack.dart';
 import 'package:PiliPlus/common/widgets/flutter/pop_scope.dart';
@@ -489,27 +487,19 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                     .value
                     ?.roomInfo
                     ?.appBackground;
-                Widget child;
-                if (appBackground != null && appBackground.isNotEmpty) {
-                  child = CachedNetworkImage(
+                if (appBackground == null || appBackground.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return Positioned.fill(
+                  child: CachedNetworkImage(
                     fit: BoxFit.cover,
                     width: maxWidth,
                     height: maxHeight,
                     memCacheWidth: maxWidth.cacheSize(context),
                     imageUrl: ImageUtils.safeThumbnailUrl(appBackground),
                     placeholder: (_, _) => const SizedBox.shrink(),
-                  );
-                } else {
-                  child = Image.asset(
-                    Assets.livingBackground,
-                    fit: BoxFit.cover,
-                    width: maxWidth,
-                    height: maxHeight,
-                    cacheWidth: maxWidth.cacheSize(context),
-                  );
-                }
-                return Positioned.fill(
-                  child: Opacity(opacity: 0.6, child: child),
+                    errorWidget: (_, _, _) => const SizedBox.shrink(),
+                  ),
                 );
               },
             ),
@@ -528,7 +518,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                       () => _liveRoomController.cleanScreen.value
                           ? const SizedBox.shrink()
                           : SizedBox(
-                              height: padding.top + kToolbarHeight,
+                              height: padding.top + 62,
                               child: _buildAppBar(false),
                             ),
                     ),
@@ -558,13 +548,14 @@ class _LiveRoomPageState extends State<LiveRoomPage>
   }
 
   Widget _buildPH(bool isFullScreen) {
-    final height = maxWidth / Style.aspectRatio16x9;
+    final height = maxWidth / _liveRoomController.sourceAspectRatio.value;
     final videoHeight = isFullScreen
         ? maxHeight - (isWindowMode && !isPortrait ? 0 : padding.top)
         : height;
-    final bottomHeight = maxHeight - padding.top - height - kToolbarHeight;
+    final bottomHeight = maxHeight - padding.top - height - 70;
     return Column(
       children: [
+        if (!isFullScreen) const SizedBox(height: 8),
         SizedBox(
           width: maxWidth,
           height: videoHeight,
@@ -589,7 +580,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
   Widget _buildPP(bool isFullScreen) => LayoutBuilder(
     builder: (context, constraints) {
       final height = constraints.maxHeight;
-      final bottomHeight = 60.0 + padding.bottom;
+      final bottomHeight = 44.0 + padding.bottom;
       return Stack(
         children: [
           Positioned.fill(
@@ -675,43 +666,40 @@ class _LiveRoomPageState extends State<LiveRoomPage>
 
   Widget get onlineWidget => GestureDetector(
     onTap: _showRank,
+    behavior: HitTestBehavior.opaque,
     child: Obx(() {
-      final viewers = _liveRoomController.topViewers;
+      final viewers = _liveRoomController.topViewers.take(3).toList();
       return Tooltip(
         message: '观众与大航海榜',
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: SizedBox(
+          height: 40,
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
             if (viewers.isNotEmpty)
               SizedBox(
-                width: 24 + (viewers.length - 1) * 17,
-                height: 24,
-                child: Stack(
-                  children: [
-                    for (final (index, viewer) in viewers.indexed)
-                      Positioned(
-                        left: index * 17.0,
-                        child: NetworkImgLayer(
-                          src: viewer.face,
-                          width: 24,
-                          height: 24,
-                          type: .avatar,
-                        ),
-                      ),
-                  ],
-                ),
+                width: 27 + (viewers.length - 1) * 20,
+                height: 27,
+                child: Stack(children: [
+                  for (final (index, viewer) in viewers.indexed)
+                    Positioned(left: index * 20.0, child: Container(
+                      width: 27, height: 27,
+                      decoration: BoxDecoration(shape: BoxShape.circle,
+                        border: Border.all(color: const [Color(0xFFE2BA69), Color(0xFFC2CDD9), Color(0xFFC3947C)][index], width: 1.5)),
+                      child: NetworkImgLayer(src: viewer.face, width: 24, height: 24, type: .avatar),
+                    )),
+                ]),
               ),
-            const SizedBox(width: 4),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 65),
-              child: Text(
+            const SizedBox(width: 3),
+            Container(
+              width: 28, height: 28,
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(color: Color(0x55212B36), shape: BoxShape.circle),
+              alignment: Alignment.center,
+              child: FittedBox(fit: BoxFit.scaleDown, child: Text(
                 _liveRoomController.onlineCount.value ?? '观众',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, color: Colors.white),
-              ),
+                style: const TextStyle(fontSize: 10, color: Colors.white),
+              )),
             ),
-          ],
+          ]),
         ),
       );
     }),
@@ -727,19 +715,27 @@ class _LiveRoomPageState extends State<LiveRoomPage>
             length: 2,
             child: Column(
               children: [
-                const LiveSheetHeading(title: '房间观众'),
-                const TabBar(
-                  tabs: [
-                    Tab(text: '房间观众'),
-                    Tab(text: '大航海'),
-                  ],
-                ),
+                SizedBox(height: 38, child: Row(children: [
+                  const Expanded(child: TabBar(
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    dividerColor: Colors.transparent,
+                    labelPadding: EdgeInsets.symmetric(horizontal: 12),
+                    labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    indicatorSize: TabBarIndicatorSize.label,
+                    tabs: [Tab(height: 34, text: '房间观众'), Tab(height: 34, text: '大航海')],
+                  )),
+                  IconButton(tooltip: '关闭榜单', onPressed: () => Navigator.pop(context),
+                    constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+                    padding: EdgeInsets.zero, icon: const Icon(Icons.close, size: 17)),
+                  const SizedBox(width: 6),
+                ])),
                 Expanded(
                   child: TabBarView(
                     children: [
                       ContributionRankPanel(ruid: ruid, roomId: live.roomId),
                       ColoredBox(
-                        color: const Color(0xFF202536),
+                        color: livePanelBackground,
                         child: LiveGuardRankPanel(
                           roomId: live.roomId,
                           ruid: ruid,
@@ -800,14 +796,6 @@ class _LiveRoomPageState extends State<LiveRoomPage>
         LiveMenuAction('刷新', Icons.refresh, live.queryLiveUrl),
         LiveMenuAction('播放设置', Icons.tune, _showPlaybackSettings),
         LiveMenuAction('清晰度', Icons.high_quality_outlined, _showQuality),
-        LiveMenuAction(
-          live.usePortraitOverlay ? '分区观看' : '竖屏全屏',
-          Icons.stay_current_portrait,
-          () {
-            live.portraitOverlay.value = !live.usePortraitOverlay;
-            live.cleanScreen.value = false;
-          },
-        ),
         for (final section in LiveSettingsSection.values)
           LiveMenuAction(
             section.title,
@@ -929,10 +917,10 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                 ExpansionTile(
                   title: const Text('画面比例'),
                   children: [
-                    for (final fit in VideoFitType.values)
+                    for (final fit in const [VideoFitType.contain, VideoFitType.cover, VideoFitType.fitWidth])
                       Obx(
                         () => RadioListTile<VideoFitType>(
-                          title: Text(fit.desc),
+                          title: Text(switch (fit) {VideoFitType.contain => '跟随直播源', VideoFitType.cover => '填充窗口', _ => '适应窗口'}),
                           value: fit,
                           groupValue: plPlayerController.videoFit.value,
                           onChanged: (value) {
@@ -1029,7 +1017,9 @@ class _LiveRoomPageState extends State<LiveRoomPage>
     final compactHeader = MediaQuery.sizeOf(context).width < 520;
     return AppBar(
       primary: !plPlayerController.removeSafeArea,
-      toolbarHeight: isFullScreen ? 0 : null,
+      toolbarHeight: isFullScreen ? 0 : 62,
+      leadingWidth: 32,
+      titleSpacing: 0,
       backgroundColor: Colors.transparent,
       foregroundColor: Colors.white,
       titleTextStyle: const TextStyle(color: Colors.white),
@@ -1126,7 +1116,9 @@ class _LiveRoomPageState extends State<LiveRoomPage>
         IconButton(
           tooltip: '更多',
           onPressed: _showMore,
-          icon: const Icon(Icons.more_vert, size: 22),
+          constraints: const BoxConstraints.tightFor(width: 30, height: 40),
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.more_vert, size: 20),
         ),
       ],
     );
@@ -1137,7 +1129,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
         clampDouble(maxHeight / maxWidth * 1.08, 0.56, 0.7) * maxWidth;
     final rightWidth = min(400.0, maxWidth - videoWidth - padding.horizontal);
     videoWidth = maxWidth - rightWidth - padding.horizontal;
-    final videoHeight = maxHeight - padding.top - kToolbarHeight;
+    final videoHeight = maxHeight - padding.top - 62;
     final width = isFullScreen ? maxWidth : videoWidth;
     final height = isFullScreen
         ? maxHeight - (isWindowMode && !isPortrait ? 0 : padding.top)
@@ -1210,14 +1202,14 @@ class _LiveRoomPageState extends State<LiveRoomPage>
 
   Widget get _buildInputWidget {
     final child = Padding(
-      padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + padding.bottom),
+      padding: EdgeInsets.fromLTRB(12, 5, 12, 5 + padding.bottom),
       child: SizedBox(
-        height: 44,
+        height: 34,
         child: Row(
           children: [
             Expanded(
               child: Material(
-                color: const Color(0xFF383740),
+                color: const Color(0x70263041),
                 borderRadius: BorderRadius.circular(24),
                 child: InkWell(
                   onTap: _liveRoomController.onSendDanmaku,
@@ -1230,14 +1222,14 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                           '发个弹幕聊聊',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 14, color: Colors.white70),
+                          style: TextStyle(fontSize: 13, color: Colors.white70),
                         ),
                       ),
                       IconButton(
                         tooltip: '表情弹幕',
                         constraints: const BoxConstraints.tightFor(
-                          width: 44,
-                          height: 44,
+                          width: 34,
+                          height: 34,
                         ),
                         padding: EdgeInsets.zero,
                         onPressed: () =>
@@ -1245,7 +1237,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                         icon: const Icon(
                           Icons.emoji_emotions_outlined,
                           color: Colors.white70,
-                          size: 24,
+                          size: 22,
                         ),
                       ),
                     ],
@@ -1253,12 +1245,12 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Builder(
               builder: (context) {
                 final isLogin = kDebugMode || _liveRoomController.isLogin;
                 return Material(
-                  color: const Color(0xFF383740),
+                  color: const Color(0x70263041),
                   shape: const CircleBorder(),
                   child: Tooltip(
                     message: '点赞',
@@ -1273,7 +1265,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                           ? _liveRoomController.onLikeTapUp
                           : null,
                       child: SizedBox.square(
-                        dimension: 44,
+                        dimension: 34,
                         child: Stack(
                           alignment: Alignment.center,
                           clipBehavior: Clip.none,
@@ -1281,7 +1273,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                             const Icon(
                               Icons.thumb_up_off_alt,
                               color: Colors.white,
-                              size: 22,
+                              size: 19,
                             ),
                             Positioned(
                               top: -12,
@@ -1308,13 +1300,15 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                 );
               },
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             IconButton.filled(
               tooltip: '礼物',
               style: IconButton.styleFrom(
                 backgroundColor: const Color(0xFFFB7299),
                 foregroundColor: Colors.white,
-                fixedSize: const Size(44, 44),
+                fixedSize: const Size(34, 34),
+                minimumSize: const Size(34, 34),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 padding: EdgeInsets.zero,
               ),
               onPressed: () => showLiveGiftPanel(
@@ -1336,7 +1330,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                     ?.roomInfo
                     ?.parentAreaId,
               ),
-              icon: const Icon(Icons.card_giftcard_rounded, size: 24),
+              icon: const Icon(Icons.card_giftcard_rounded, size: 22),
             ),
           ],
         ),

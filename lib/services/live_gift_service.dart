@@ -150,6 +150,7 @@ class LiveGiftService {
           ? const []
           : LiveGiftParser.bag(data[1], roomId, anchorUid, now()),
       wallet: LiveWallet(gold: liveInt(wallet['gold'])),
+      medal: LiveMedalProgress.fromUserInfo(data[2], anchorUid),
       errors: errors,
     );
   }

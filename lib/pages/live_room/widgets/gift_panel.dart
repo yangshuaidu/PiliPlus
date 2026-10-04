@@ -1,3 +1,4 @@
+import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:PiliPlus/pages/live_room/widgets/live_panel_surface.dart';
 import 'package:PiliPlus/services/live_gift_service.dart';
 import 'package:flutter/services.dart';
@@ -239,76 +240,49 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
     return PopScope(
       canPop: !_busy,
       child: LivePanelSurface(
+        gift: true,
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 16, right: 4),
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      '赠送礼物',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 16,
-                        height: 1.4,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  PopupMenuButton<bool>(
-                    tooltip: '按电池价格排序',
-                    enabled: !_busy && !_bag,
-                    initialValue: _priceDescending,
-                    onSelected: (value) =>
-                        setState(() => _priceDescending = value),
-                    icon: const Icon(Icons.swap_vert, size: 20),
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: false, child: Text('价格从低到高')),
-                      PopupMenuItem(value: true, child: Text('价格从高到低')),
-                    ],
-                  ),
-                  IconButton(
-                    tooltip: '刷新礼物',
-                    onPressed: _busy ? null : _load,
-                    icon: const Icon(Icons.refresh, size: 20),
-                  ),
-                  IconButton(
-                    tooltip: '关闭礼物',
-                    onPressed: _busy ? null : () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, size: 20),
-                  ),
-                ],
-              ),
-            ),
             SizedBox(
-              height: 32 + MediaQuery.textScalerOf(context).scale(14),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  children: [
+              height: 52,
+              child: Row(children: [
+                Expanded(child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Row(children: [
                     for (final group in groups)
-                      _tab(
-                        group.id == 'room' ? '礼物' : group.name,
+                      _tab(group.id == 'room' ? '礼物' : group.name,
                         !_bag && selectedGroup?.id == group.id,
-                        () => _selectGroup(group.id),
-                      ),
-                    _tab(
-                      '包裹',
-                      _bag,
-                      () => setState(() {
-                        _bag = true;
-                        _selected = null;
-                        _bagItem = null;
-                        _message = null;
-                      }),
-                    ),
+                        () => _selectGroup(group.id)),
+                    _tab('包裹', _bag, () => setState(() {
+                      _bag = true; _selected = null; _bagItem = null; _message = null;
+                    })),
+                  ]),
+                )),
+                PopupMenuButton<bool>(
+                  tooltip: '按电池价格排序',
+                  enabled: !_busy && !_bag,
+                  initialValue: _priceDescending,
+                  onSelected: (value) => setState(() => _priceDescending = value),
+                  constraints: const BoxConstraints(minWidth: 150),
+                  padding: EdgeInsets.zero,
+                  iconSize: 19,
+                  icon: const Icon(Icons.swap_vert, size: 19),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: false, child: Text('价格从低到高')),
+                    PopupMenuItem(value: true, child: Text('价格从高到低')),
                   ],
                 ),
-              ),
+                IconButton(tooltip: '刷新礼物', onPressed: _busy ? null : _load,
+                  constraints: const BoxConstraints.tightFor(width: 32, height: 36),
+                  padding: EdgeInsets.zero, icon: const Icon(Icons.refresh, size: 19)),
+                IconButton(tooltip: '关闭礼物', onPressed: _busy ? null : () => Navigator.pop(context),
+                  constraints: const BoxConstraints.tightFor(width: 32, height: 36),
+                  padding: EdgeInsets.zero, icon: const Icon(Icons.close, size: 19)),
+                const SizedBox(width: 4),
+              ]),
             ),
+            _medalProgress(snapshot?.medal),
             if (_busy && !_confirming)
               const LinearProgressIndicator(minHeight: 2),
             Expanded(
@@ -388,9 +362,9 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: columns,
-                                mainAxisExtent: 68 + 34 * scale,
+                                mainAxisExtent: 53 + 34 * scale,
                                 crossAxisSpacing: 4,
-                                mainAxisSpacing: 4,
+                                mainAxisSpacing: 3,
                               ),
                           itemCount: entries.length,
                           itemBuilder: (context, index) {
@@ -443,18 +417,18 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
                                           if (gift.imageUrl.isNotEmpty)
                                             Image.network(
                                               gift.imageUrl,
-                                              height: 52,
-                                              width: 52,
+                                              height: 44,
+                                              width: 44,
                                               errorBuilder: (_, _, _) =>
                                                   const Icon(
                                                     Icons.card_giftcard,
-                                                    size: 52,
+                                                    size: 44,
                                                   ),
                                             )
                                           else
                                             const Icon(
                                               Icons.card_giftcard,
-                                              size: 52,
+                                              size: 44,
                                               color: liveAccent,
                                             ),
                                           if (!available && !gift.isRedPacket)
@@ -526,7 +500,9 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
       onPressed: _busy ? null : onTap,
       style: TextButton.styleFrom(
         foregroundColor: selected ? liveAccent : Colors.white60,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        minimumSize: const Size(0, 36),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       child: Column(
@@ -552,6 +528,42 @@ class _LiveGiftPanelState extends State<LiveGiftPanel> {
         ],
       ),
     ),
+  );
+
+  Widget _medalProgress(LiveMedalProgress? medal) => Container(
+    key: const ValueKey('gift-medal-progress'),
+    margin: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+    decoration: BoxDecoration(color: const Color(0xFF322E25),
+      borderRadius: BorderRadius.circular(8)),
+    child: Row(children: [
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min, children: [
+          Row(children: [
+            Expanded(child: Text(medal == null ? '粉丝勋章' : '${medal.name} Lv.${medal.level}',
+              maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, color: Color(0xFFF1D390)))),
+            if (medal?.fraction != null) Text('Lv.${medal!.level + 1}',
+              style: const TextStyle(fontSize: 10, color: Colors.white60)),
+          ]),
+          const SizedBox(height: 4),
+          LinearProgressIndicator(value: medal?.fraction ?? 0, minHeight: 3,
+            color: const Color(0xFFE8C46B), backgroundColor: Colors.white12),
+          const SizedBox(height: 4),
+          Text(medal?.remaining == null ? '亲密度进度暂未提供' : '升级还需 ${medal!.remaining} 亲密度',
+            maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 10, color: Colors.white60)),
+        ])),
+      const SizedBox(width: 12),
+      TextButton(
+        style: TextButton.styleFrom(foregroundColor: const Color(0xFFE8C46B),
+          padding: const EdgeInsets.symmetric(horizontal: 6), minimumSize: const Size(0, 30),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+        onPressed: _busy ? null : () => PageUtils.launchURL(
+          'https://live.bilibili.com/p/html/live-app-guard-info/index.html?uid=${widget.service.anchorUid}&is_live_webview=1'),
+        child: const Text('舰长权益', style: TextStyle(fontSize: 11)),
+      ),
+    ]),
   );
 
   Widget _footer() {

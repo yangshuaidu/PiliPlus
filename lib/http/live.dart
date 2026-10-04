@@ -263,6 +263,27 @@ abstract final class LiveHttp {
   static Future<LoadingState<RoomInfoH5Data>> liveRoomInfoH5({
     required Object roomId,
   }) async {
+    // Mobile room metadata carries the anchor's app skin. The web background
+    // can be a platform default even when a custom mobile skin is configured.
+    try {
+      final params = <String, dynamic>{
+        'room_id': roomId,
+        'platform': 'android',
+        'mobi_app': 'android',
+        'device': 'android',
+        'build': 8000000,
+      };
+      AppSign.appSign(params);
+      final mobile = await Request().get(
+        '${HttpString.liveBaseUrl}/xlive/app-room/v1/index/getInfoByRoom',
+        queryParameters: params,
+      );
+      if (mobile.data['code'] == 0 && mobile.data['data'] is Map<String, dynamic>) {
+        return Success(RoomInfoH5Data.fromJson(mobile.data['data']));
+      }
+    } catch (_) {
+      // Retain room information when the app endpoint is unavailable.
+    }
     final res = await Request().get(
       Api.liveRoomInfoH5,
       queryParameters: {'room_id': roomId},

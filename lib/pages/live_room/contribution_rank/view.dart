@@ -54,11 +54,16 @@ class _ContributionRankPanelState extends State<ContributionRankPanel>
     return Column(
       children: [
         SizedBox(
-          height: 45,
+          height: 30,
           child: TabBar(
             controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            labelPadding: const EdgeInsets.symmetric(horizontal: 10),
+            labelStyle: const TextStyle(fontSize: 12),
+            indicatorSize: TabBarIndicatorSize.label,
             tabs: LiveContributionRankType.values
-                .map((e) => Tab(text: e.title))
+                .map((e) => Tab(height: 26, text: e.title))
                 .toList(),
             dividerColor: Theme.of(
               context,
@@ -90,7 +95,7 @@ class _ContributionRankPanelState extends State<ContributionRankPanel>
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 6, 16, 8),
           child: Text(
-            '人数与榜单口径可能不同。仅展示接口返回的观众；匿名标记保留，不据人数差推断隐身身份。',
+            '仅展示公开榜单，匿名用户保留匿名。',
             style: TextStyle(fontSize: 11),
           ),
         ),
@@ -212,6 +217,10 @@ class LiveOwnRankTile extends StatelessWidget {
         ? (online ? '100+' : '未上榜')
         : '#$rank';
     return ListTile(
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      titleTextStyle: const TextStyle(fontSize: 13, color: Colors.white),
+      subtitleTextStyle: const TextStyle(fontSize: 11, color: Colors.white60),
       leading: NetworkImgLayer(
         src: item.face,
         width: 32,
@@ -244,13 +253,14 @@ class _Item extends StatelessWidget {
     late final colorScheme = ColorScheme.of(context);
     Widget child = Text(
       item.name ?? '观众',
+      style: const TextStyle(fontSize: 13),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
     if (item.uinfoMedal case final uinfoMedal?) {
       try {
         child = Column(
-          spacing: 4,
+          spacing: 2,
           crossAxisAlignment: .start,
           children: [
             child,
@@ -271,7 +281,7 @@ class _Item extends StatelessWidget {
           ? null
           : () => Get.toNamed('/member?mid=${item.uid}'),
       child: Padding(
-        padding: const .only(left: 10, top: 9, bottom: 8, right: 16),
+        padding: const .only(left: 10, top: 6, bottom: 6, right: 16),
         child: Row(
           spacing: 10,
           children: [
@@ -293,8 +303,8 @@ class _Item extends StatelessWidget {
             ),
             NetworkImgLayer(
               src: item.face,
-              width: 42,
-              height: 42,
+              width: 34,
+              height: 34,
               type: .avatar,
             ),
             Expanded(child: child),

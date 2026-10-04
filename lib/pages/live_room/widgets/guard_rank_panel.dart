@@ -109,10 +109,14 @@ class _LiveGuardRankPanelState extends State<LiveGuardRankPanel> {
         : const {1: '总督', 2: '提督', 3: '舰长'}[level];
     final rank = liveInt(data['rank']);
     return ListTile(
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      titleTextStyle: const TextStyle(fontSize: 13, color: Colors.white),
+      subtitleTextStyle: const TextStyle(fontSize: 11, color: Colors.white60),
       leading: NetworkImgLayer(
         src: user.face,
-        width: 42,
-        height: 42,
+        width: 34,
+        height: 34,
         type: .avatar,
       ),
       title: Text(
@@ -151,15 +155,17 @@ class _LiveGuardRankPanelState extends State<LiveGuardRankPanel> {
                 child: Text(
                   '大航海${_count == null ? '' : ' · $_count'}',
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
               IconButton(
                 tooltip: '刷新榜单',
+                constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+                padding: EdgeInsets.zero,
                 onPressed: _busy ? null : () => _load(reset: true),
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(Icons.refresh, size: 17),
               ),
               if (!widget.embedded)
                 IconButton(
@@ -171,12 +177,17 @@ class _LiveGuardRankPanelState extends State<LiveGuardRankPanel> {
           ),
         ),
         Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 12,
+          alignment: WrapAlignment.start,
+          spacing: 5,
           children: [
             for (final tab in _tabs.entries)
               ChoiceChip(
-                label: Text(tab.value),
+                label: Text(tab.value, style: const TextStyle(fontSize: 12)),
+                showCheckmark: false,
+                padding: EdgeInsets.zero,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 9),
+                visualDensity: const VisualDensity(horizontal: -2, vertical: -4),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 selected: _type == tab.key,
                 onSelected: (_) {
                   setState(() => _type = tab.key);
@@ -190,12 +201,17 @@ class _LiveGuardRankPanelState extends State<LiveGuardRankPanel> {
       final footer = <Widget>[
         if (_own?.isNotEmpty == true) _row(_own!, prefix: '我'),
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           child: FilledButton.icon(
             onPressed: () => PageUtils.launchURL(
               'https://live.bilibili.com/p/html/live-app-guard-info/index.html?uid=${widget.ruid}&is_live_webview=1',
             ),
-            icon: const Icon(Icons.sailing),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 30),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              textStyle: const TextStyle(fontSize: 12),
+            ),
+            icon: const Icon(Icons.sailing, size: 16),
             label: const Text('在官方页面上舰'),
           ),
         ),

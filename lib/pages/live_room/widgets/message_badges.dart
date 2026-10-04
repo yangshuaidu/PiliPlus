@@ -1,3 +1,4 @@
+import 'package:PiliPlus/pages/live_room/widgets/wealth_badge.dart';
 import 'package:PiliPlus/models_new/live/live_danmaku/live_user_badges.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -11,13 +12,13 @@ List<InlineSpan> liveBadgeSpans(
       WidgetSpan(
         alignment: PlaceholderAlignment.middle,
         child: Padding(
-          padding: const EdgeInsets.only(right: 4, bottom: 2),
+          padding: const EdgeInsets.only(right: 4),
           child: GestureDetector(
             onTap: onTap,
             child: Tooltip(
               message: tip ?? label,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius: BorderRadius.circular(4),
@@ -67,12 +68,9 @@ List<InlineSpan> liveBadgeSpans(
         tip: '官方消息携带的榜单名次 ${badges.rank}',
       ),
     if (badges.wealth > 0)
-      badge(
-        '${badges.wealth}',
-        const Color(0xff8b9fdc),
-        icon: Icons.workspace_premium,
-        tip: '荣耀等级 ${badges.wealth}',
-      ),
+      WidgetSpan(alignment: PlaceholderAlignment.middle,
+        child: Padding(padding: const EdgeInsets.only(right: 4),
+          child: GestureDetector(onTap: onTap, child: LiveWealthBadge(level: badges.wealth)))),
     if (guard != null)
       badge(
         guard,

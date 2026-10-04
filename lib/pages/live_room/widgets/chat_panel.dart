@@ -36,12 +36,8 @@ class LiveRoomChatPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    late final bg = isPP
-        ? Colors.black.withValues(alpha: 0.36)
-        : Colors.transparent;
-    late final nameColor = isPP
-        ? Colors.white.withValues(alpha: 0.9)
-        : Colors.white.withValues(alpha: 0.6);
+    const bg = Color(0x70263041);
+    const nameColor = Color(0xFFA5DFEA);
     late final colorScheme = ColorScheme.of(context);
     late final primary = colorScheme.isDark
         ? colorScheme.primary
@@ -60,7 +56,7 @@ class LiveRoomChatPanel extends StatelessWidget {
               initialIndex: liveRoomController.trimDmIndex * 2,
               padding: const .symmetric(horizontal: 12),
               controller: liveRoomController.scrollController,
-              separatorBuilder: (_, _) => const SizedBox(height: 4),
+              separatorBuilder: (_, _) => const SizedBox(height: 2),
               itemCount: liveRoomController.builtLength =
                   liveRoomController.messages.length,
               physics: platformClampingPhysics,
@@ -75,7 +71,7 @@ class LiveRoomChatPanel extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
-                        vertical: 6,
+                        vertical: 3,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.blueGrey.withValues(alpha: .24),
@@ -113,7 +109,7 @@ class LiveRoomChatPanel extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
-                        vertical: 6,
+                        vertical: 3,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.deepOrange.withValues(alpha: 0.22),
@@ -183,10 +179,10 @@ class LiveRoomChatPanel extends StatelessWidget {
                           behavior: HitTestBehavior.opaque,
                           onTap: () => _openMessage(context, item),
                           child: Container(
-                            constraints: const BoxConstraints(minHeight: 40),
+                            constraints: const BoxConstraints(minHeight: 24),
                             padding: EdgeInsets.symmetric(
-                              horizontal: isPP ? 8 : 0,
-                              vertical: 4,
+                              horizontal: 6,
+                              vertical: 2,
                             ),
                             decoration: BoxDecoration(
                               color: bg,
@@ -195,7 +191,7 @@ class LiveRoomChatPanel extends StatelessWidget {
                             child: Text.rich(
                               style: const TextStyle(
                                 fontSize: 15,
-                                height: 1.4,
+                                height: 1.35,
                                 color: Colors.white,
                               ),
                               TextSpan(
@@ -349,7 +345,7 @@ class LiveRoomChatPanel extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
-                      vertical: 4,
+                      vertical: 2,
                     ),
                     child: Text(
                       entries.first.label,
