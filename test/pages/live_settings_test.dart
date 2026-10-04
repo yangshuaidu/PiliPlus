@@ -1,4 +1,5 @@
 import 'package:PiliPlus/pages/live_room/widgets/live_panel_surface.dart';
+
 import 'dart:async';
 import 'dart:io';
 
@@ -63,7 +64,7 @@ Widget app(
       builder: (context) => TextButton(
         onPressed: () => showLivePanel<void>(
           context,
-           (_) => LiveSettingsPanel(
+          (_) => LiveSettingsPanel(
             settings: settings,
             initialSection: section,
             superChatAvailable: superChatAvailable,
@@ -78,19 +79,22 @@ Widget app(
 );
 
 void main() {
-  testWidgets('global SC disable is explicit and cannot be overridden by a display toggle', (tester) async {
-    final settings = SettingsStore().open();
-    await tester.pumpWidget(app(settings, superChatAvailable: false));
-    await tester.tap(find.text('打开'));
-    await tester.pumpAndSettle();
-    final target = find.byKey(const ValueKey('superChats'));
-    await tester.ensureVisible(target);
-    expect(tester.widget<SwitchListTile>(target).value, isFalse);
-    expect(tester.widget<SwitchListTile>(target).onChanged, isNull);
-    expect(find.textContaining('播放器设置已将醒目留言'), findsOneWidget);
-    expect(settings.enabled(LiveRoomOption.superChats), isTrue);
-    expect(tester.takeException(), isNull);
-  });
+  testWidgets(
+    'global SC disable is explicit and cannot be overridden by a display toggle',
+    (tester) async {
+      final settings = SettingsStore().open();
+      await tester.pumpWidget(app(settings, superChatAvailable: false));
+      await tester.tap(find.text('打开'));
+      await tester.pumpAndSettle();
+      final target = find.byKey(const ValueKey('superChats'));
+      await tester.ensureVisible(target);
+      expect(tester.widget<SwitchListTile>(target).value, isFalse);
+      expect(tester.widget<SwitchListTile>(target).onChanged, isNull);
+      expect(find.textContaining('播放器设置已将醒目留言'), findsOneWidget);
+      expect(settings.enabled(LiveRoomOption.superChats), isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
   test(
     'preferences survive closing and reopening the actual Hive settings file',
     () async {

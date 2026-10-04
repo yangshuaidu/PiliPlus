@@ -46,7 +46,6 @@ import 'package:PiliPlus/services/service_locator.dart';
 import 'package:PiliPlus/utils/android/bindings.g.dart';
 import 'package:PiliPlus/utils/extension/num_ext.dart';
 import 'package:PiliPlus/utils/extension/size_ext.dart';
-import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/image_utils.dart';
 import 'package:PiliPlus/utils/max_screen_size.dart';
 import 'package:PiliPlus/utils/mobile_observer.dart';
@@ -771,7 +770,8 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                 CheckedPopupMenuItem(
                   checked: plPlayerController.continueLiveInBackground.value,
                   onTap: () => plPlayerController.setContinueLiveInBackground(
-                    !plPlayerController.continueLiveInBackground.value),
+                    !plPlayerController.continueLiveInBackground.value,
+                  ),
                   child: const Text('后台听直播'),
                 ),
               if (compactHeader)
@@ -964,76 +964,156 @@ class _LiveRoomPageState extends State<LiveRoomPage>
   Widget get _buildInputWidget {
     final child = Padding(
       padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + padding.bottom),
-      child: SizedBox(height: 44, child: Row(children: [
-        Expanded(child: Material(
-          color: const Color(0xFF383740),
-          borderRadius: BorderRadius.circular(24),
-          child: InkWell(
-            onTap: _liveRoomController.onSendDanmaku,
-            borderRadius: BorderRadius.circular(24),
-            child: Row(children: [
-              Obx(() => IconButton(
-                tooltip: '画面弹幕',
-                constraints: const BoxConstraints.tightFor(width: 38, height: 44),
+      child: SizedBox(
+        height: 44,
+        child: Row(
+          children: [
+            Expanded(
+              child: Material(
+                color: const Color(0xFF383740),
+                borderRadius: BorderRadius.circular(24),
+                child: InkWell(
+                  onTap: _liveRoomController.onSendDanmaku,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Row(
+                    children: [
+                      Obx(
+                        () => IconButton(
+                          tooltip: '画面弹幕',
+                          constraints: const BoxConstraints.tightFor(
+                            width: 38,
+                            height: 44,
+                          ),
+                          padding: EdgeInsets.zero,
+                          onPressed: () =>
+                              _liveRoomController.setDanmakuVisible(
+                                !plPlayerController.enableShowLiveDanmaku.value,
+                              ),
+                          icon: Icon(
+                            plPlayerController.enableShowLiveDanmaku.value
+                                ? CustomIcons.dm_on
+                                : CustomIcons.dm_off,
+                            color: Colors.white70,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                      const Expanded(
+                        child: Text(
+                          '发个弹幕聊聊',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 14, color: Colors.white70),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: '表情弹幕',
+                        constraints: const BoxConstraints.tightFor(
+                          width: 38,
+                          height: 44,
+                        ),
+                        padding: EdgeInsets.zero,
+                        onPressed: () =>
+                            _liveRoomController.onSendDanmaku(true),
+                        icon: const Icon(
+                          Icons.emoji_emotions_outlined,
+                          color: Colors.white70,
+                          size: 24,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Builder(
+              builder: (context) {
+                final isLogin = kDebugMode || _liveRoomController.isLogin;
+                return Material(
+                  color: const Color(0xFF383740),
+                  shape: const CircleBorder(),
+                  child: Tooltip(
+                    message: '点赞',
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: isLogin ? null : _liveRoomController.toastNotLogin,
+                      onTapDown: isLogin
+                          ? _liveRoomController.onLikeTapDown
+                          : null,
+                      onTapUp: isLogin ? _liveRoomController.onLikeTapUp : null,
+                      onTapCancel: isLogin
+                          ? _liveRoomController.onLikeTapUp
+                          : null,
+                      child: SizedBox.square(
+                        dimension: 44,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          clipBehavior: Clip.none,
+                          children: [
+                            const Icon(
+                              Icons.thumb_up_off_alt,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                            Positioned(
+                              top: -12,
+                              right: 0,
+                              child: Obx(() {
+                                final count =
+                                    _liveRoomController.likeClickTime.value;
+                                return count == 0
+                                    ? const SizedBox.shrink()
+                                    : Text(
+                                        'x$count',
+                                        style: const TextStyle(
+                                          color: Color(0xFFFB7299),
+                                          fontSize: 12,
+                                        ),
+                                      );
+                              }),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 8),
+            IconButton.filled(
+              tooltip: '礼物',
+              style: IconButton.styleFrom(
+                backgroundColor: const Color(0xFFFB7299),
+                foregroundColor: Colors.white,
+                fixedSize: const Size(44, 44),
                 padding: EdgeInsets.zero,
-                onPressed: () => _liveRoomController.setDanmakuVisible(
-                  !plPlayerController.enableShowLiveDanmaku.value),
-                icon: Icon(plPlayerController.enableShowLiveDanmaku.value
-                    ? CustomIcons.dm_on : CustomIcons.dm_off,
-                  color: Colors.white70, size: 20),
-              )),
-              const Expanded(child: Text('发个弹幕聊聊', maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 14, color: Colors.white70))),
-              IconButton(
-                tooltip: '表情弹幕',
-                constraints: const BoxConstraints.tightFor(width: 38, height: 44),
-                padding: EdgeInsets.zero,
-                onPressed: () => _liveRoomController.onSendDanmaku(true),
-                icon: const Icon(Icons.emoji_emotions_outlined, color: Colors.white70, size: 24)),
-            ]),
-          ),
-        )),
-        const SizedBox(width: 8),
-        Builder(builder: (context) {
-          final isLogin = kDebugMode || _liveRoomController.isLogin;
-          return Material(
-            color: const Color(0xFF383740), shape: const CircleBorder(),
-            child: Tooltip(message: '点赞', child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: isLogin ? null : _liveRoomController.toastNotLogin,
-              onTapDown: isLogin ? _liveRoomController.onLikeTapDown : null,
-              onTapUp: isLogin ? _liveRoomController.onLikeTapUp : null,
-              onTapCancel: isLogin ? _liveRoomController.onLikeTapUp : null,
-              child: SizedBox.square(dimension: 44,
-                child: Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: [
-                  const Icon(Icons.thumb_up_off_alt, color: Colors.white, size: 22),
-                  Positioned(top: -12, right: 0, child: Obx(() {
-                    final count = _liveRoomController.likeClickTime.value;
-                    return count == 0 ? const SizedBox.shrink() : Text('x$count',
-                      style: const TextStyle(color: Color(0xFFFB7299), fontSize: 12));
-                  })),
-                ])),
-            )),
-          );
-        }),
-        const SizedBox(width: 8),
-        IconButton.filled(
-          tooltip: '礼物',
-          style: IconButton.styleFrom(
-            backgroundColor: const Color(0xFFFB7299), foregroundColor: Colors.white,
-            fixedSize: const Size(44, 44), padding: EdgeInsets.zero),
-          onPressed: () => showLiveGiftPanel(
-            context,
-            roomId: _liveRoomController.roomId,
-            anchorUid: _liveRoomController.ruid,
-            anchorName: _liveRoomController.roomInfoH5.value?.anchorInfo?.baseInfo?.uname ?? '当前主播',
-            areaId: _liveRoomController.roomInfoH5.value?.roomInfo?.areaId,
-            parentAreaId: _liveRoomController.roomInfoH5.value?.roomInfo?.parentAreaId,
-          ),
-          icon: const Icon(Icons.card_giftcard_rounded, size: 24),
+              ),
+              onPressed: () => showLiveGiftPanel(
+                context,
+                roomId: _liveRoomController.roomId,
+                anchorUid: _liveRoomController.ruid,
+                anchorName:
+                    _liveRoomController
+                        .roomInfoH5
+                        .value
+                        ?.anchorInfo
+                        ?.baseInfo
+                        ?.uname ??
+                    '当前主播',
+                areaId: _liveRoomController.roomInfoH5.value?.roomInfo?.areaId,
+                parentAreaId: _liveRoomController
+                    .roomInfoH5
+                    .value
+                    ?.roomInfo
+                    ?.parentAreaId,
+              ),
+              icon: const Icon(Icons.card_giftcard_rounded, size: 24),
+            ),
+          ],
         ),
-      ])),
+      ),
     );
     if (_liveRoomController.showSuperChat) {
       return Stack(
@@ -1055,8 +1135,6 @@ class _LiveRoomPageState extends State<LiveRoomPage>
     }
     return child;
   }
-
-
 }
 
 class _BorderIndicator extends LeafRenderObjectWidget {

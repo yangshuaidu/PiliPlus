@@ -84,7 +84,8 @@ class LiveRoomSettings {
         (LiveRoomOption.roomStatusNotices, LiveRoomOption.roomNotices),
         (LiveRoomOption.moderationNotices, LiveRoomOption.roomNotices),
       ]) {
-        if (stored[child.name] is! bool) defaults[child.name] = defaults[parent.name]!;
+        if (stored[child.name] is! bool)
+          defaults[child.name] = defaults[parent.name]!;
       }
     } else {
       // Preserve the effective behavior of the old combined blocking switches.
@@ -159,8 +160,12 @@ class LiveRoomSettings {
 
   /// Applied both when receiving a message and when rebuilding existing chat.
   bool allows(Object? message, {bool activityDanmaku = false}) {
-    if (message is LiveGiftMessage) return enabled(message.guardPurchase
-        ? LiveRoomOption.guardMessages : LiveRoomOption.giftMessages);
+    if (message is LiveGiftMessage)
+      return enabled(
+        message.guardPurchase
+            ? LiveRoomOption.guardMessages
+            : LiveRoomOption.giftMessages,
+      );
     if (message is SuperChatItem) return enabled(LiveRoomOption.superChats);
     if (message is LiveRoomNotice) {
       if (message.entry) return enabled(LiveRoomOption.entryNotices);

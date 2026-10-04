@@ -8,14 +8,17 @@ class BackgroundPlaybackPolicy {
   bool _resumeOnForeground = false;
   void cancelResume() => _resumeOnForeground = false;
 
-  BackgroundPlaybackAction handle(AppLifecycleState state, {
+  BackgroundPlaybackAction handle(
+    AppLifecycleState state, {
     required bool continuePlayback,
     required bool playing,
     bool pictureInPicture = false,
   }) {
     if (state == AppLifecycleState.detached) {
       cancelResume();
-      return playing ? BackgroundPlaybackAction.pause : BackgroundPlaybackAction.none;
+      return playing
+          ? BackgroundPlaybackAction.pause
+          : BackgroundPlaybackAction.none;
     }
     if (state == AppLifecycleState.paused) {
       if (!continuePlayback && !pictureInPicture && playing) {

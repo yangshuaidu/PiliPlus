@@ -141,24 +141,30 @@ void main() {
     },
   );
 
-  testWidgets('refresh removes a stale group and returns to the room catalogue', (
-    tester,
-  ) async {
-    transport.catalogData = groupedCatalogue();
-    await openGiftPanel(tester, service);
-    await tester.tap(find.text('互动'));
-    await tester.pumpAndSettle();
-    expect(visibleGiftNames(tester), ['高价']);
-    transport.catalogData = null;
-    await tester.tap(find.byTooltip('刷新礼物'));
-    await tester.pumpAndSettle();
-    expect(find.text('测试礼物'), findsOneWidget);
-    expect(find.text('互动'), findsNothing);
-    expect(
-      tester.widget<Semantics>(find.byKey(const ValueKey('gift-tab-礼物'))).properties.selected,
-      isTrue,
-    );
-  });
+  testWidgets(
+    'refresh removes a stale group and returns to the room catalogue',
+    (
+      tester,
+    ) async {
+      transport.catalogData = groupedCatalogue();
+      await openGiftPanel(tester, service);
+      await tester.tap(find.text('互动'));
+      await tester.pumpAndSettle();
+      expect(visibleGiftNames(tester), ['高价']);
+      transport.catalogData = null;
+      await tester.tap(find.byTooltip('刷新礼物'));
+      await tester.pumpAndSettle();
+      expect(find.text('测试礼物'), findsOneWidget);
+      expect(find.text('互动'), findsNothing);
+      expect(
+        tester
+            .widget<Semantics>(find.byKey(const ValueKey('gift-tab-礼物')))
+            .properties
+            .selected,
+        isTrue,
+      );
+    },
+  );
 
   testWidgets(
     'paid confirmation shows account, recipient, quantity and exact charge',

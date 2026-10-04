@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:PiliPlus/plugin/pl_player/utils/background_playback_policy.dart';
+
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -149,7 +151,6 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
 
   GestureType? _gestureType;
   Offset? _initialFocalPoint;
-
 
   StreamSubscription? _brightnessListener;
   void _onBrightnessChanged(double value) {

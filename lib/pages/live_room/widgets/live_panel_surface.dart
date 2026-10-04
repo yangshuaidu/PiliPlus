@@ -10,8 +10,10 @@ const livePanelBackground = Color(0xFF1C1B23);
 /// in landscape. Keyboard space and safe areas are deducted before sizing.
 Size livePanelSize(MediaQueryData media) {
   final size = media.size;
-  final height = math.max(0.0,
-    size.height - media.padding.top - media.viewInsets.bottom);
+  final height = math.max(
+    0.0,
+    size.height - media.padding.top - media.viewInsets.bottom,
+  );
   final side = size.width >= 600 && size.width > size.height;
   if (side) return Size(math.min(420.0, size.width * .48), height);
   final desired = media.viewInsets.bottom > 0 || height < 400
@@ -28,8 +30,8 @@ Future<T?> showLivePanel<T>(BuildContext context, WidgetBuilder builder) =>
       transitionDuration: const Duration(milliseconds: 220),
       pageBuilder: (context, _, _) {
         final media = MediaQuery.of(context);
-        final side = media.size.width >= 600 &&
-            media.size.width > media.size.height;
+        final side =
+            media.size.width >= 600 && media.size.width > media.size.height;
         return Padding(
           padding: EdgeInsets.only(
             top: media.padding.top,

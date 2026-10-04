@@ -3,7 +3,16 @@ import 'package:PiliPlus/models_new/live/live_danmaku/live_user_badges.dart';
 import 'package:PiliPlus/models_new/live/live_danmaku/live_wire_decoder.dart';
 import 'package:html/parser.dart' as html;
 
-enum LiveNoticeKind { guard, globalBroadcast, roomBroadcast, like, roomStatus, moderation, rank, system }
+enum LiveNoticeKind {
+  guard,
+  globalBroadcast,
+  roomBroadcast,
+  like,
+  roomStatus,
+  moderation,
+  rank,
+  system,
+}
 
 class LiveRoomNotice {
   const LiveRoomNotice({
@@ -92,7 +101,8 @@ class LiveRoomNotice {
         // than guessing its scope from the message's wording.
         final sourceRoom = liveInt(root['real_roomid'] ?? data['real_roomid']);
         kind = sourceRoom == roomId
-            ? LiveNoticeKind.roomBroadcast : LiveNoticeKind.globalBroadcast;
+            ? LiveNoticeKind.roomBroadcast
+            : LiveNoticeKind.globalBroadcast;
         text = _plain(
           sourceRoom == roomId
               ? root['msg_self'] ?? root['msg_common'] ?? data['msg_common']

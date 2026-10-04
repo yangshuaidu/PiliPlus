@@ -15,67 +15,127 @@ import 'package:material_ui/material_ui.dart';
 
 import '../support/live_gift_fakes.dart';
 
-LiveRoomSettings settings() => LiveRoomSettings(read: (_) => null, write: (_, _) async {})..load();
+LiveRoomSettings settings() =>
+    LiveRoomSettings(read: (_) => null, write: (_, _) async {})..load();
 
 Map<String, dynamic> splitCatalogue() => {
-  'gift_config': {'base_config': {'list': [
-    {...giftConfig(), 'id': 31164, 'name': '粉丝团灯牌'},
-    {...giftConfig(), 'id': 33988, 'name': '人气票'},
-    {...giftConfig(), 'id': 35970, 'name': '饭团'},
-    {...giftConfig(), 'id': 35930, 'name': '星星之火'},
-    {...giftConfig(), 'id': 34001, 'name': '粉丝团灯牌'},
-    {...giftConfig(), 'id': 34102, 'name': '人气票'},
-    {...giftConfig(price: 500), 'id': 30869, 'name': '心动卡'},
-    {...giftConfig(price: 10000), 'id': 34931, 'name': '友谊的小船'},
-  ]}},
+  'gift_config': {
+    'base_config': {
+      'list': [
+        {...giftConfig(), 'id': 31164, 'name': '粉丝团灯牌'},
+        {...giftConfig(), 'id': 33988, 'name': '人气票'},
+        {...giftConfig(), 'id': 35970, 'name': '饭团'},
+        {...giftConfig(), 'id': 35930, 'name': '星星之火'},
+        {...giftConfig(), 'id': 34001, 'name': '粉丝团灯牌'},
+        {...giftConfig(), 'id': 34102, 'name': '人气票'},
+        {...giftConfig(price: 500), 'id': 30869, 'name': '心动卡'},
+        {...giftConfig(price: 10000), 'id': 34931, 'name': '友谊的小船'},
+      ],
+    },
+  },
   'gift_data': {
     'max_send_gift': 99,
-    'room_gift_list': {'gold_list': [
-      {'gift_id': 35970}, {'gift_id': 33988}, {'gift_id': 31164}, {'gift_id': 35930},
-      {'gift_id': 31164}, // repeated ID in one source is still displayed once
-    ]},
+    'room_gift_list': {
+      'gold_list': [
+        {'gift_id': 35970},
+        {'gift_id': 33988},
+        {'gift_id': 31164},
+        {'gift_id': 35930},
+        {'gift_id': 31164}, // repeated ID in one source is still displayed once
+      ],
+    },
     'tab_list': [
-      {'tab_id': 9, 'tab_name': '粉丝团', 'list': [
-        {'gift_id': 34001}, {'gift_id': 34102}, {'gift_id': 30869},
-      ]},
-      {'tab_id': 2, 'tab_name': '航海', 'list': [
-        {'gift_id': 34931, 'special': {'is_use': 0, 'tips': '需要大航海权限'}},
-      ]},
+      {
+        'tab_id': 9,
+        'tab_name': '粉丝团',
+        'list': [
+          {'gift_id': 34001},
+          {'gift_id': 34102},
+          {'gift_id': 30869},
+        ],
+      },
+      {
+        'tab_id': 2,
+        'tab_name': '航海',
+        'list': [
+          {
+            'gift_id': 34931,
+            'special': {'is_use': 0, 'tips': '需要大航海权限'},
+          },
+        ],
+      },
     ],
   },
 };
 
 const captureKey = ValueKey('mobile-layout-capture');
 
-Widget preview(WidgetBuilder panel, {TargetPlatform platform = TargetPlatform.iOS}) => MaterialApp(
-  theme: ThemeData(platform: platform, brightness: Brightness.dark,
-    fontFamily: Platform.environment['CJK_TEST_FONT'] == null ? null : 'MobilePreview'),
+Widget preview(
+  WidgetBuilder panel, {
+  TargetPlatform platform = TargetPlatform.iOS,
+}) => MaterialApp(
+  theme: ThemeData(
+    platform: platform,
+    brightness: Brightness.dark,
+    fontFamily: Platform.environment['CJK_TEST_FONT'] == null
+        ? null
+        : 'MobilePreview',
+  ),
   builder: (context, child) => RepaintBoundary(key: captureKey, child: child!),
-  home: Scaffold(backgroundColor: const Color(0xFF12121A),
-    body: SafeArea(child: Column(children: [
-      const ListTile(leading: CircleAvatar(child: Icon(Icons.person)),
-        title: Text('直播布局回归样例'), subtitle: Text('保留画面 · 面板不盖住视频')),
-      AspectRatio(aspectRatio: 16 / 9, child: Container(
-        key: const ValueKey('video-region'), color: const Color(0xFF30324A),
-        alignment: Alignment.center,
-        child: const Text('直播画面区域 · 16:9', style: TextStyle(color: Colors.white70)))),
-      Expanded(child: Align(alignment: Alignment.topLeft, child: Padding(
-        padding: const EdgeInsets.all(16), child: Builder(builder: (context) => TextButton(
-          onPressed: () => showLivePanel<void>(context, panel),
-          child: const Text('打开面板')))))),
-    ])),
+  home: Scaffold(
+    backgroundColor: const Color(0xFF12121A),
+    body: SafeArea(
+      child: Column(
+        children: [
+          const ListTile(
+            leading: CircleAvatar(child: Icon(Icons.person)),
+            title: Text('直播布局回归样例'),
+            subtitle: Text('保留画面 · 面板不盖住视频'),
+          ),
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Container(
+              key: const ValueKey('video-region'),
+              color: const Color(0xFF30324A),
+              alignment: Alignment.center,
+              child: const Text(
+                '直播画面区域 · 16:9',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Builder(
+                  builder: (context) => TextButton(
+                    onPressed: () => showLivePanel<void>(context, panel),
+                    child: const Text('打开面板'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
   ),
 );
 
 Future<void> capture(WidgetTester tester, String name) async {
   if (Platform.environment['LIVE_UI_CAPTURE'] != '1') return;
-  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(captureKey));
+  final boundary = tester.renderObject<RenderRepaintBoundary>(
+    find.byKey(captureKey),
+  );
   final image = await boundary.toImage(pixelRatio: 2);
   final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
   await tester.runAsync(() async {
     final output = Directory('build/live-ui');
     await output.create(recursive: true);
-    await File('${output.path}/$name.png').writeAsBytes(bytes!.buffer.asUint8List());
+    await File('${output.path}/$name.png')
+        .writeAsBytes(bytes!.buffer.asUint8List());
   });
   image.dispose();
 }
@@ -86,17 +146,27 @@ void main() {
     if (path != null) {
       TestWidgetsFlutterBinding.ensureInitialized();
       final loader = FontLoader('MobilePreview');
-      loader.addFont(File(path).readAsBytes().then((bytes) => ByteData.sublistView(bytes)));
+      loader.addFont(
+        File(path).readAsBytes().then((bytes) => ByteData.sublistView(bytes)),
+      );
       await loader.load();
     }
   });
 
   test('broadcast scope, guard, likes, room status and moderation are independently filtered', () async {
     final prefs = settings();
-    final foreign = LiveRoomNotice.parse({'cmd': 'NOTICE_MSG', 'real_roomid': 20,
-      'msg_common': '另一直播间的广播', 'msg_self': '本房间文本'}, 10)!;
-    final own = LiveRoomNotice.parse({'cmd': 'NOTICE_MSG', 'real_roomid': 10,
-      'msg_common': '全站文本', 'msg_self': '本房间广播'}, 10)!;
+    final foreign = LiveRoomNotice.parse({
+      'cmd': 'NOTICE_MSG',
+      'real_roomid': 20,
+      'msg_common': '另一直播间的广播',
+      'msg_self': '本房间文本',
+    }, 10)!;
+    final own = LiveRoomNotice.parse({
+      'cmd': 'NOTICE_MSG',
+      'real_roomid': 10,
+      'msg_common': '全站文本',
+      'msg_self': '本房间广播',
+    }, 10)!;
     expect(foreign.kind, LiveNoticeKind.globalBroadcast);
     expect(own.kind, LiveNoticeKind.roomBroadcast);
     expect(own.text, '本房间广播');
@@ -116,9 +186,14 @@ void main() {
       expect(prefs.allows(notice), isFalse, reason: cmd);
       expect(prefs.allows(own), isTrue);
     }
-    final guard = LiveGiftMessage.parse({'cmd': 'GUARD_BUY', 'data': {
-      'username': '观众', 'gift_name': '舰长', 'num': 1,
-    }})!;
+    final guard = LiveGiftMessage.parse({
+      'cmd': 'GUARD_BUY',
+      'data': {
+        'username': '观众',
+        'gift_name': '舰长',
+        'num': 1,
+      },
+    })!;
     expect(prefs.allows(guard), isFalse);
     await prefs.set(LiveRoomOption.guardMessages, true);
     await prefs.set(LiveRoomOption.giftMessages, false);
@@ -126,9 +201,15 @@ void main() {
   });
 
   test('split switches inherit hidden legacy categories without changing explicit new choices', () {
-    final prefs = LiveRoomSettings(read: (key) => key == LiveRoomSettings.storageKey ? {
-      'giftBroadcasts': false, 'roomNotices': false, 'likeNotices': true,
-    } : null)..load();
+    final prefs = LiveRoomSettings(
+      read: (key) => key == LiveRoomSettings.storageKey
+          ? {
+              'giftBroadcasts': false,
+              'roomNotices': false,
+              'likeNotices': true,
+            }
+          : null,
+    )..load();
     expect(prefs.enabled(LiveRoomOption.globalBroadcasts), isFalse);
     expect(prefs.enabled(LiveRoomOption.guardMessages), isFalse);
     expect(prefs.enabled(LiveRoomOption.roomStatusNotices), isFalse);
@@ -138,63 +219,91 @@ void main() {
   });
 
   for (final size in [const Size(393, 852), const Size(360, 640)]) {
-    testWidgets('gift panel preserves portrait video and separates same-name IDs at $size', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      final transport = FakeTransport()..catalogData = splitCatalogue();
-      final account = LiveGiftAccount(100, FakeLoginIdentity(), 'test-csrf');
-      final service = LiveGiftService(roomId: 200, anchorUid: 300,
-        transport: transport, journal: FakeJournal(), currentAccount: () => account);
-      addTearDown(service.dispose);
-      await tester.pumpWidget(preview((_) => LiveGiftPanel(service: service, anchorName: '测试主播')));
-      await tester.tap(find.text('打开面板'));
-      await tester.pumpAndSettle();
-      final panel = tester.getRect(find.byKey(const ValueKey('live-panel-surface')));
-      final video = tester.getRect(find.byKey(const ValueKey('video-region')));
-      expect(panel.top, greaterThanOrEqualTo(video.bottom));
-      expect(panel.height, lessThanOrEqualTo(size.height * .5));
-      expect(find.byKey(const ValueKey('live-gift-31164-0')), findsOneWidget);
-      expect(find.byKey(const ValueKey('live-gift-34001-0')), findsNothing);
-      expect(find.text('粉丝团灯牌'), findsOneWidget);
-      expect(find.text('人气票'), findsOneWidget);
-      await capture(tester, 'ios-gifts-${size.width.toInt()}');
-      await tester.tap(find.byKey(const ValueKey('gift-tab-粉丝团')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('live-gift-31164-0')), findsNothing);
-      expect(find.byKey(const ValueKey('live-gift-34001-0')), findsOneWidget);
-      expect(find.text('饭团'), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('gift-tab-航海')));
-      await tester.pumpAndSettle();
-      expect(find.text('友谊的小船'), findsOneWidget);
-      expect(find.text('粉丝团灯牌'), findsNothing);
-      expect(transport.postCount, 0);
-      expect(tester.takeException(), isNull);
-    });
+    testWidgets(
+      'gift panel preserves portrait video and separates same-name IDs at $size',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final transport = FakeTransport()..catalogData = splitCatalogue();
+        final account = LiveGiftAccount(100, FakeLoginIdentity(), 'test-csrf');
+        final service = LiveGiftService(
+          roomId: 200,
+          anchorUid: 300,
+          transport: transport,
+          journal: FakeJournal(),
+          currentAccount: () => account,
+        );
+        addTearDown(service.dispose);
+        await tester.pumpWidget(
+          preview((_) => LiveGiftPanel(service: service, anchorName: '测试主播')),
+        );
+        await tester.tap(find.text('打开面板'));
+        await tester.pumpAndSettle();
+        final panel = tester.getRect(
+          find.byKey(const ValueKey('live-panel-surface')),
+        );
+        final video = tester.getRect(
+          find.byKey(const ValueKey('video-region')),
+        );
+        expect(panel.top, greaterThanOrEqualTo(video.bottom));
+        expect(panel.height, lessThanOrEqualTo(size.height * .5));
+        expect(find.byKey(const ValueKey('live-gift-31164-0')), findsOneWidget);
+        expect(find.byKey(const ValueKey('live-gift-34001-0')), findsNothing);
+        expect(find.text('粉丝团灯牌'), findsOneWidget);
+        expect(find.text('人气票'), findsOneWidget);
+        await capture(tester, 'ios-gifts-${size.width.toInt()}');
+        await tester.tap(find.byKey(const ValueKey('gift-tab-粉丝团')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('live-gift-31164-0')), findsNothing);
+        expect(find.byKey(const ValueKey('live-gift-34001-0')), findsOneWidget);
+        expect(find.text('饭团'), findsNothing);
+        await tester.tap(find.byKey(const ValueKey('gift-tab-航海')));
+        await tester.pumpAndSettle();
+        expect(find.text('友谊的小船'), findsOneWidget);
+        expect(find.text('粉丝团灯牌'), findsNothing);
+        expect(transport.postCount, 0);
+        expect(tester.takeException(), isNull);
+      },
+    );
   }
 
-  testWidgets('iOS settings preserve portrait video and expose the global broadcast switch', (tester) async {
-    tester.view.physicalSize = const Size(393, 852);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final prefs = settings();
-    await tester.pumpWidget(preview((_) => LiveSettingsPanel(settings: prefs,
-      initialSection: LiveSettingsSection.notifications,
-      onDisplaySettings: () {}, onBlockRules: () {})));
-    await tester.tap(find.text('打开面板'));
-    await tester.pumpAndSettle();
-    expect(tester.getTopLeft(find.byKey(const ValueKey('live-panel-surface'))).dy,
-      greaterThanOrEqualTo(tester.getBottomRight(find.byKey(const ValueKey('video-region'))).dy));
-    final global = find.byKey(const ValueKey('globalBroadcasts'));
-    await tester.ensureVisible(global);
-    await tester.pumpAndSettle();
-    await tester.tap(global);
-    await tester.pumpAndSettle();
-    expect(prefs.enabled(LiveRoomOption.globalBroadcasts), isFalse);
-    expect(prefs.enabled(LiveRoomOption.giftBroadcasts), isTrue);
-    await capture(tester, 'ios-notifications');
-    expect(tester.takeException(), isNull);
-  });
+  testWidgets(
+    'iOS settings preserve portrait video and expose the global broadcast switch',
+    (tester) async {
+      tester.view.physicalSize = const Size(393, 852);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final prefs = settings();
+      await tester.pumpWidget(
+        preview(
+          (_) => LiveSettingsPanel(
+            settings: prefs,
+            initialSection: LiveSettingsSection.notifications,
+            onDisplaySettings: () {},
+            onBlockRules: () {},
+          ),
+        ),
+      );
+      await tester.tap(find.text('打开面板'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('live-panel-surface'))).dy,
+        greaterThanOrEqualTo(
+          tester.getBottomRight(find.byKey(const ValueKey('video-region'))).dy,
+        ),
+      );
+      final global = find.byKey(const ValueKey('globalBroadcasts'));
+      await tester.ensureVisible(global);
+      await tester.pumpAndSettle();
+      await tester.tap(global);
+      await tester.pumpAndSettle();
+      expect(prefs.enabled(LiveRoomOption.globalBroadcasts), isFalse);
+      expect(prefs.enabled(LiveRoomOption.giftBroadcasts), isTrue);
+      await capture(tester, 'ios-notifications');
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   test('landscape panel leaves at least half the screen for the video', () {
     final panel = livePanelSize(const MediaQueryData(size: Size(740, 360)));

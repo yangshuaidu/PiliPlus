@@ -24,7 +24,10 @@ Future<void> showLiveSettings(
         () => SwitchListTile.adaptive(
           controlAffinity: ListTileControlAffinity.trailing,
           contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-          title: const Text('显示画面弹幕', style: TextStyle(fontSize: 14, height: 1.4)),
+          title: const Text(
+            '显示画面弹幕',
+            style: TextStyle(fontSize: 14, height: 1.4),
+          ),
           subtitle: controller.plPlayerController.tempPlayerConf
               ? const Text('已启用临时播放器配置，本开关仅本次有效')
               : null,
