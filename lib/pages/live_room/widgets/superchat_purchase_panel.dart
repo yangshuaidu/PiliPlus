@@ -341,7 +341,7 @@ class _LiveSuperChatPurchasePanelState
                       child: Text(
                         '醒目留言 SC',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -362,7 +362,7 @@ class _LiveSuperChatPurchasePanelState
               if (_busy) const LinearProgressIndicator(),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -397,14 +397,44 @@ class _LiveSuperChatPurchasePanelState
                           ),
                         if (config.tiers.isEmpty)
                           const Text('平台暂未返回本房间可购买的 SC 档位'),
+                        const Text('选择留言档位', style: TextStyle(fontSize: 12, color: Colors.white60)),
+                        const SizedBox(height: 6),
+                        LayoutBuilder(builder: (context, limits) {
+                          final columns = MediaQuery.textScalerOf(context).scale(12) > 17 ? 2 : 3;
+                          return Wrap(
+                          spacing: 8,
+                          runSpacing: 5,
+                          children: [
+                            for (final option in config.tiers)
+                              SizedBox(width: (limits.maxWidth - (columns - 1) * 8) / columns, child: LiveChoiceChip(
+                                selected:
+                                    !_customSelected && _gold == option.gold,
+                                onSelected: !_busy && option.enabled
+                                    ? (_) => setState(() {
+                                        _gold = option.gold;
+                                        _customSelected = false;
+                                      })
+                                    : null,
+                                label: Text(
+                                  '${liveBatteryAmount(option.gold)} 电池 · ${option.seconds} 秒${option.badge.isEmpty ? '' : '\n${option.badge}'}',
+                                ),
+                              )),
+                          ],
+                        );
+                        }),
+                        const SizedBox(height: 12),
                         TextField(
                           controller: _text,
                           enabled: !_busy,
-                          maxLines: 3,
+                          maxLines: 2,
                           maxLength: tier?.limit,
+                          style: const TextStyle(fontSize: 14, height: 1.35),
                           decoration: const InputDecoration(
                             labelText: '留言内容',
-                            hintText: '输入醒目留言',
+                            hintText: '写下想对主播说的话…',
+                            isDense: true,
+                            contentPadding: EdgeInsets.all(12),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
                           ),
                           onChanged: (_) => setState(() {
                             _translated = '';
@@ -431,27 +461,7 @@ class _LiveSuperChatPurchasePanelState
                             ],
                           ),
                         if (_translated.isNotEmpty) Text(_translated),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final option in config.tiers)
-                              ChoiceChip(
-                                selected:
-                                    !_customSelected && _gold == option.gold,
-                                onSelected: !_busy && option.enabled
-                                    ? (_) => setState(() {
-                                        _gold = option.gold;
-                                        _customSelected = false;
-                                      })
-                                    : null,
-                                label: Text(
-                                  '${liveBatteryAmount(option.gold)} 电池 · ${option.seconds} 秒${option.badge.isEmpty ? '' : '\n${option.badge}'}',
-                                ),
-                              ),
-                          ],
-                        ),
+                        const SizedBox(height: 8),
                         if (tier?.description.isNotEmpty == true)
                           Padding(
                             padding: const EdgeInsets.only(top: 8),
@@ -498,7 +508,7 @@ class _LiveSuperChatPurchasePanelState
                           if (_animate)
                             Wrap(
                               spacing: 8,
-                              runSpacing: 8,
+                              runSpacing: 5,
                               children: [
                                 for (final image in _images)
                                   InkWell(
@@ -540,27 +550,17 @@ class _LiveSuperChatPurchasePanelState
                           icon: const Icon(Icons.battery_charging_full),
                           label: const Text('前往官方充值'),
                         ),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            onPressed:
-                                !_busy &&
-                                    _pending == null &&
-                                    tier != null &&
-                                    tier.enabled &&
-                                    config.banReason.isEmpty &&
-                                    _text.text.trim().isNotEmpty
-                                ? _send
-                                : null,
-                            child: Text(
-                              '购买并发送 · ${liveBatteryAmount(_total)} 电池',
-                            ),
-                          ),
-                        ),
                       ],
                     ],
                   ),
                 ),
+              ),
+              LivePaymentFooter(
+                amount: '本次金额 ${liveBatteryAmount(_total)} 电池',
+                actionKey: const ValueKey('live-superchat-next'),
+                onNext: !_busy && _pending == null && tier != null && tier.enabled &&
+                  config != null && config.banReason.isEmpty && _text.text.trim().isNotEmpty
+                  ? _send : null,
               ),
             ],
           ),

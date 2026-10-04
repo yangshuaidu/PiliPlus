@@ -93,9 +93,9 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.tap(find.byType(ListTile).first);
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('发红包 · 10 电池'));
+    await tester.ensureVisible(find.byKey(const ValueKey('live-redpacket-next')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('发红包 · 10 电池'));
+    await tester.tap(find.byKey(const ValueKey('live-redpacket-next')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('确认发送电池红包'), findsOneWidget);

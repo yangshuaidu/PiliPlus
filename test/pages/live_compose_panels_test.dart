@@ -103,7 +103,7 @@ void main() {
       expect(find.text('20 电池 · 5 秒\n限一次'), findsOneWidget);
       await tester.enterText(find.byType(TextField).first, '测试醒目留言');
       await tester.pump();
-      final send = find.widgetWithText(FilledButton, '购买并发送 · 20 电池');
+      final send = find.byKey(const ValueKey('live-superchat-next'));
       await tester.ensureVisible(send);
       await tester.tap(send);
       await tester.pump();
@@ -152,7 +152,7 @@ void main() {
         await tester.enterText(find.byType(TextField).last, '400');
         await tester.pump();
         await tester.ensureVisible(
-          find.widgetWithText(FilledButton, '购买并发送 · 400 电池'),
+          find.byKey(const ValueKey('live-superchat-next')),
         );
         await tester.pump();
         expect(tester.takeException(), isNull);

@@ -41,14 +41,24 @@ void main() {
       )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
     }
   });
-  for (final scenario in ['horizontal', 'portrait', 'default', 'narrow', 'source-4x3']) {
+  for (final scenario in [
+    'horizontal',
+    'portrait',
+    'default',
+    'narrow',
+    'source-4x3',
+  ]) {
     testWidgets('production mobile controls and source layout: $scenario', (
       tester,
     ) async {
       final narrow = scenario == 'narrow';
       final size = narrow ? const Size(360, 640) : const Size(402, 874);
       final portrait = scenario == 'portrait';
-      final sourceRatio = portrait ? 9 / 16 : scenario == 'source-4x3' ? 4 / 3 : 16 / 9;
+      final sourceRatio = portrait
+          ? 9 / 16
+          : scenario == 'source-4x3'
+          ? 4 / 3
+          : 16 / 9;
       tester.view.physicalSize = size * 3;
       tester.view.devicePixelRatio = 3;
       tester.view.padding = narrow

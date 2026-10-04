@@ -672,6 +672,8 @@ class _LiveRoomPageState extends State<LiveRoomPage>
       showLivePanel<void>(
         context,
         (context) => LivePanelSurface(
+          accent: const Color(0xFFF3DCA4),
+          background: const Color(0xFF151220),
           child: DefaultTabController(
             length: 2,
             child: Column(
@@ -716,7 +718,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                     children: [
                       ContributionRankPanel(ruid: ruid, roomId: live.roomId),
                       ColoredBox(
-                        color: livePanelBackground,
+                        color: const Color(0xFF151220),
                         child: LiveGuardRankPanel(
                           roomId: live.roomId,
                           ruid: ruid,

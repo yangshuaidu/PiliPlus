@@ -302,7 +302,7 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
                     child: Text(
                       '发红包',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -328,7 +328,7 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
                     for (final type in LiveRedPacketType.values)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: ChoiceChip(
+                        child: LiveChoiceChip(
                           label: Text(type.label),
                           selected: _type == type,
                           onSelected: _busy
@@ -348,7 +348,7 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
               if (_busy) const LinearProgressIndicator(),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -359,50 +359,44 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
                         ),
                       if (config != null && config.packages.isEmpty)
                         const Text('当前账号暂无可用红包套餐'),
-                      for (final package
-                          in config?.packages ?? <LiveRedPacketPackage>[])
-                        Card(
-                          color: identical(_package, package)
-                              ? Theme.of(context).colorScheme.secondaryContainer
-                              : null,
-                          child: ListTile(
-                            onTap: _busy || !package.enabled
-                                ? null
-                                : () => setState(() {
+                      LayoutBuilder(builder: (context, limits) {
+                        final columns = MediaQuery.textScalerOf(context).scale(12) > 17 ? 2 : 3;
+                        return Wrap(spacing: 8, runSpacing: 8, children: [
+                          for (final package in config?.packages ?? <LiveRedPacketPackage>[])
+                            SizedBox(width: (limits.maxWidth - (columns - 1) * 8) / columns,
+                              child: Material(
+                                color: identical(_package, package) ? liveAccent.withValues(alpha: .12) : const Color(0xFF26232D),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8),
+                                  side: BorderSide(color: identical(_package, package) ? liveAccent : Colors.white12)),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(8),
+                                  onTap: _busy || !package.enabled ? null : () => setState(() {
                                     _package = package;
                                     _count = package.counts.firstOrNull;
                                     _danmaku = package.danmaku.firstOrNull;
-                                    _requirement =
-                                        config!.requirements.containsKey(
-                                          package.defaultRequirement,
-                                        )
-                                        ? package.defaultRequirement
-                                        : config.requirements.keys.firstOrNull;
+                                    _requirement = config!.requirements.containsKey(package.defaultRequirement)
+                                      ? package.defaultRequirement : config.requirements.keys.firstOrNull;
                                   }),
-                            leading:
-                                package.awards.firstOrNull?.image.isNotEmpty ==
-                                    true
-                                ? Image.network(
-                                    package.awards.first.image,
-                                    width: 42,
-                                    height: 42,
-                                    errorBuilder: (_, _, _) =>
-                                        const Icon(Icons.redeem),
-                                  )
-                                : const Icon(Icons.redeem),
-                            title: Text(package.title),
-                            subtitle: Text(
-                              '${liveBatteryAmount(package.price)} 电池'
-                              '${package.tips.isNotEmpty ? '\n${package.tips}' : ''}'
-                              '${package.enabled ? '' : '\n当前不可发送'}',
-                            ),
-                            trailing: identical(_package, package)
-                                ? const Icon(Icons.check_circle)
-                                : null,
-                          ),
-                        ),
+                                  child: Padding(padding: const EdgeInsets.all(8),
+                                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                                      if (package.awards.firstOrNull?.image.isNotEmpty == true)
+                                        Image.network(package.awards.first.image, width: 26, height: 26,
+                                          errorBuilder: (_, _, _) => const Icon(Icons.redeem, size: 26))
+                                      else const Icon(Icons.redeem, size: 26, color: liveAccent),
+                                      const SizedBox(height: 4),
+                                      Text(package.title, textAlign: TextAlign.center,
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                                      Text('${liveBatteryAmount(package.price)} 电池',
+                                        style: const TextStyle(fontSize: 11, color: Colors.white60)),
+                                      if (package.tips.isNotEmpty) Text(package.tips, style: const TextStyle(fontSize: 11)),
+                                      if (!package.enabled) const Text('当前不可发送', style: TextStyle(fontSize: 11)),
+                                    ])),
+                                ),
+                              )),
+                        ]);
+                      }),
                       if (config != null) ...[
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         const Text('开奖时间'),
                         if (config.durations.isEmpty)
                           const Text('接口未返回可用时长，暂不能发送'),
@@ -410,7 +404,7 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
                           spacing: 8,
                           children: [
                             for (final duration in config.durations)
-                              ChoiceChip(
+                              LiveChoiceChip(
                                 label: Text(
                                   duration == 0
                                       ? '平台默认'
@@ -432,7 +426,7 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
                           spacing: 8,
                           children: [
                             for (final count in _package!.counts)
-                              ChoiceChip(
+                              LiveChoiceChip(
                                 label: Text('$count 个'),
                                 selected: _count == count,
                                 onSelected: _busy
@@ -447,7 +441,7 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
                           children: [
                             for (final requirement
                                 in config!.requirements.entries)
-                              ChoiceChip(
+                              LiveChoiceChip(
                                 label: Text(requirement.value),
                                 selected: _requirement == requirement.key,
                                 onSelected: _busy
@@ -462,13 +456,13 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
                           const Text('接口未返回参与条件，暂不能发送'),
                       ],
                       if (_package?.danmaku.isNotEmpty == true) ...[
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         const Text('红包附带弹幕'),
                         Wrap(
                           spacing: 8,
                           children: [
                             for (final danmaku in _package!.danmaku)
-                              ChoiceChip(
+                              LiveChoiceChip(
                                 label: Text(danmaku.text),
                                 selected: _danmaku?.id == danmaku.id,
                                 onSelected: _busy
@@ -478,21 +472,7 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
                           ],
                         ),
                       ],
-                      const SizedBox(height: 16),
-                      FilledButton(
-                        onPressed:
-                            _busy ||
-                                _package == null ||
-                                _duration == null ||
-                                !batteryReady
-                            ? null
-                            : _send,
-                        child: Text(
-                          _package == null
-                              ? '选择红包套餐'
-                              : '发红包 · ${liveBatteryAmount(_package!.price)} 电池',
-                        ),
-                      ),
+                      const SizedBox(height: 8),
                       TextButton(
                         onPressed: _busy ? null : _load,
                         child: const Text('刷新套餐'),
@@ -500,6 +480,11 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
                     ],
                   ),
                 ),
+              ),
+              LivePaymentFooter(
+                amount: _package == null ? '选择红包套餐' : '合计 ${liveBatteryAmount(_package!.price)} 电池',
+                actionKey: const ValueKey('live-redpacket-next'),
+                onNext: _busy || _package == null || _duration == null || !batteryReady ? null : _send,
               ),
             ],
           ),
