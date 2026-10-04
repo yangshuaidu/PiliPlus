@@ -77,6 +77,8 @@ void main() {
       expect(transport.lastMedalQuery!['room_id'], 200);
       expect(transport.lastMedalQuery!['gift_id'], 10);
       expect(transport.lastMedalQuery!['price'], 100);
+      expect(transport.lastMedalQuery!['coin_type'], 1);
+      expect(transport.lastMedalQuery!['anchor_guest'], '300');
       expect(transport.postCount, 0);
       transport.giftMessageData = {
         'fans_medal_info': {

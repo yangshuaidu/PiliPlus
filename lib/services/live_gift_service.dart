@@ -158,11 +158,12 @@ class LiveGiftService {
         'target_id': anchorUid,
         'room_id': roomId,
         'price': medalGift.price,
-        'coin_type': medalGift.coinType,
+        // This read endpoint uses 1=gold, unlike sendGift's string coin type.
+        'coin_type': 1,
         'gift_id': medalGift.id,
         'gift_type': 0,
         'platform': 'pc',
-        'anchor_guest': '',
+        'anchor_guest': anchorUid.toString(),
       });
       _guard(account);
       medal = LiveMedalProgress.fromGiftMessage(detail, anchorUid);
