@@ -30,7 +30,10 @@ class RoomInfo {
 String? customLiveBackground(Object? value) {
   if (value is! String || value.trim().isEmpty) return null;
   final uri = Uri.tryParse(value.trim());
-  if (uri == null || !uri.hasAuthority || !['http', 'https'].contains(uri.scheme)) return null;
+  if (uri == null ||
+      !uri.hasAuthority ||
+      !['http', 'https'].contains(uri.scheme))
+    return null;
   const defaultFiles = {'785922a49980e1aa3239249c8360909488940d7d.jpg'};
   if (defaultFiles.contains(uri.pathSegments.lastOrNull)) return null;
   return uri.replace(scheme: 'https').toString();

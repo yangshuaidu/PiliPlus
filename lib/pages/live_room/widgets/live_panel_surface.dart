@@ -8,7 +8,11 @@ const livePanelBackground = Color(0xFF1C1B23);
 
 /// Compact bottom panels in portrait; a trailing panel leaves the video visible
 /// in landscape. Keyboard space and safe areas are deducted before sizing.
-Size livePanelSize(MediaQueryData media, {bool gift = false, double sourceAspectRatio = 16 / 9}) {
+Size livePanelSize(
+  MediaQueryData media, {
+  bool gift = false,
+  double sourceAspectRatio = 16 / 9,
+}) {
   final size = media.size;
   final height = math.max(
     0.0,
@@ -21,8 +25,12 @@ Size livePanelSize(MediaQueryData media, {bool gift = false, double sourceAspect
       : gift
       ? math.min(
           496.0,
-          math.min(height * .66, sourceAspectRatio < 1 ? height :
-            height - 72 - size.width / sourceAspectRatio),
+          math.min(
+            height * .66,
+            sourceAspectRatio < 1
+                ? height
+                : height - 72 - size.width / sourceAspectRatio,
+          ),
         )
       : math.min(420.0, height * .48);
   return Size(math.min(520.0, size.width), desired);
@@ -60,15 +68,23 @@ Future<T?> showLivePanel<T>(BuildContext context, WidgetBuilder builder) =>
     );
 
 class LivePanelSurface extends StatelessWidget {
-  const LivePanelSurface({super.key, required this.child, this.gift = false,
-    this.sourceAspectRatio = 16 / 9});
+  const LivePanelSurface({
+    super.key,
+    required this.child,
+    this.gift = false,
+    this.sourceAspectRatio = 16 / 9,
+  });
   final Widget child;
   final bool gift;
   final double sourceAspectRatio;
 
   @override
   Widget build(BuildContext context) {
-    final size = livePanelSize(MediaQuery.of(context), gift: gift, sourceAspectRatio: sourceAspectRatio);
+    final size = livePanelSize(
+      MediaQuery.of(context),
+      gift: gift,
+      sourceAspectRatio: sourceAspectRatio,
+    );
     final base = Theme.of(context);
     final colors = ColorScheme.fromSeed(
       seedColor: liveAccent,

@@ -156,33 +156,64 @@ Future<void> capture(WidgetTester tester, String name) async {
 void main() {
   setUpLiveProfileStorage();
   test('mobile room skin rejects defaults and never substitutes the cover', () {
-    expect(RoomInfo.fromJson({'cover': 'https://i0.hdslb.com/cover.jpg'}).appBackground, isNull);
+    expect(
+      RoomInfo.fromJson({'cover': 'https://i0.hdslb.com/cover.jpg'})
+          .appBackground,
+      isNull,
+    );
     expect(customLiveBackground(''), isNull);
-    expect(customLiveBackground('https://i0.hdslb.com/bfs/live/785922a49980e1aa3239249c8360909488940d7d.jpg'), isNull);
-    expect(customLiveBackground('http://i0.hdslb.com/bfs/live/custom.jpg'),
-      'https://i0.hdslb.com/bfs/live/custom.jpg');
+    expect(
+      customLiveBackground(
+        'https://i0.hdslb.com/bfs/live/785922a49980e1aa3239249c8360909488940d7d.jpg',
+      ),
+      isNull,
+    );
+    expect(
+      customLiveBackground('http://i0.hdslb.com/bfs/live/custom.jpg'),
+      'https://i0.hdslb.com/bfs/live/custom.jpg',
+    );
     expect(customLiveBackground('file:///tmp/background.jpg'), isNull);
   });
   test('official wealth images preserve the complete per-level artwork', () {
     expect(liveWealthAssets.length, 80);
-    expect(liveWealthAssets[37], endsWith('fe08f62c736f93362b307d02f13beff0bd630d61.png'));
+    expect(
+      liveWealthAssets[37],
+      endsWith('fe08f62c736f93362b307d02f13beff0bd630d61.png'),
+    );
     expect(liveWealthAssets[0], isNull);
   });
-  test('fan progress belongs to this anchor and missing thresholds stay unknown', () {
-    Map<String, dynamic> info(int uid, {int? next}) => {
-      'fans_medal': {'medal': {
-        'target_id': uid, 'medal_name': '测试勋章', 'level': 27,
-        'intimacy': 722, if (next != null) 'next_intimacy': next,
-      }},
-    };
-    expect(LiveMedalProgress.fromUserInfo(info(301, next: 2000), 300), isNull);
-    final medal = LiveMedalProgress.fromUserInfo(info(300, next: 2000), 300)!;
-    expect(medal.remaining, 1278);
-    expect(medal.fraction, .361);
-    expect(LiveMedalProgress.fromUserInfo(info(300), 300)!.fraction, isNull);
-    expect(LiveMedalProgress.fromUserInfo(info(300, next: 0), 300)!.remaining, isNull);
-    expect(LiveMedalProgress.fromUserInfo(info(300, next: 100), 300)!.fraction, 1);
-  });
+  test(
+    'fan progress belongs to this anchor and missing thresholds stay unknown',
+    () {
+      Map<String, dynamic> info(int uid, {int? next}) => {
+        'fans_medal': {
+          'medal': {
+            'target_id': uid,
+            'medal_name': '测试勋章',
+            'level': 27,
+            'intimacy': 722,
+            if (next != null) 'next_intimacy': next,
+          },
+        },
+      };
+      expect(
+        LiveMedalProgress.fromUserInfo(info(301, next: 2000), 300),
+        isNull,
+      );
+      final medal = LiveMedalProgress.fromUserInfo(info(300, next: 2000), 300)!;
+      expect(medal.remaining, 1278);
+      expect(medal.fraction, .361);
+      expect(LiveMedalProgress.fromUserInfo(info(300), 300)!.fraction, isNull);
+      expect(
+        LiveMedalProgress.fromUserInfo(info(300, next: 0), 300)!.remaining,
+        isNull,
+      );
+      expect(
+        LiveMedalProgress.fromUserInfo(info(300, next: 100), 300)!.fraction,
+        1,
+      );
+    },
+  );
   setUpAll(() async {
     final path = Platform.environment['CJK_TEST_FONT'];
     if (path != null) {
@@ -276,8 +307,15 @@ void main() {
         addTearDown(tester.view.reset);
         final transport = FakeTransport()
           ..catalogData = splitCatalogue()
-          ..fansMedal = {'medal': {'target_id': 300, 'medal_name': '测试勋章',
-            'level': 27, 'intimacy': 722, 'next_intimacy': 2000}};
+          ..fansMedal = {
+            'medal': {
+              'target_id': 300,
+              'medal_name': '测试勋章',
+              'level': 27,
+              'intimacy': 722,
+              'next_intimacy': 2000,
+            },
+          };
         final account = LiveGiftAccount(100, FakeLoginIdentity(), 'test-csrf');
         final service = LiveGiftService(
           roomId: 200,

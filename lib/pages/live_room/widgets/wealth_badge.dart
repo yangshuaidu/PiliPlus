@@ -3,7 +3,12 @@ import 'package:material_ui/material_ui.dart';
 
 /// Uses the complete official level artwork, including its printed number.
 class LiveWealthBadge extends StatelessWidget {
-  const LiveWealthBadge({super.key, required this.level, this.height = 16, this.image});
+  const LiveWealthBadge({
+    super.key,
+    required this.level,
+    this.height = 16,
+    this.image,
+  });
   final int level;
   final double height;
   final ImageProvider? image;

@@ -173,65 +173,65 @@ class LiveRoomChatPanel extends StatelessWidget {
                   }
                   return LiveChatLine(
                     onTap: () => _openMessage(context, item),
-                    content:                               TextSpan(
-                                children: [
-                                  if (showBadges)
-                                    ...liveBadgeSpans(
-                                      item.badges,
-                                      onTap: () => _openMessage(
-                                        context,
-                                        item,
-                                        profile: true,
-                                      ),
-                                    ),
-                                  if (item.extra.mid == liveRoomController.ruid)
-                                    const WidgetSpan(
-                                      child: Padding(
-                                        padding: .only(right: 4),
-                                        child: PBadge(
-                                          text: '主播',
-                                          isStack: false,
-                                          type: .line_primary,
-                                        ),
-                                      ),
-                                    ),
-                                  ?medal,
-                                  TextSpan(
-                                    text: '${item.name}: ',
-                                    style: TextStyle(
-                                      color:
-                                          liveNameColor(
-                                            item.badges.nameColor,
-                                          ) ??
-                                          nameColor,
-                                      fontSize: 15,
-                                    ),
-                                    recognizer: item.extra.mid == 0
-                                        ? null
-                                        : (NoDeadlineTapGestureRecognizer()
-                                            ..onTap = () => _openMessage(
-                                              context,
-                                              item,
-                                              profile: true,
-                                            )),
-                                  ),
-                                  if (item.reply case final reply?)
-                                    TextSpan(
-                                      text: '@${reply.name} ',
-                                      style: TextStyle(
-                                        color: primary,
-                                        fontSize: 15,
-                                      ),
-                                      recognizer: (reply.mid ?? 0) <= 0
-                                          ? null
-                                          : (NoDeadlineTapGestureRecognizer()
-                                              ..onTap = () => Get.toNamed(
-                                                '/member?mid=${reply.mid}',
-                                              )),
-                                    ),
-                                  _buildMsg(item),
-                                ],
+                    content: TextSpan(
+                      children: [
+                        if (showBadges)
+                          ...liveBadgeSpans(
+                            item.badges,
+                            onTap: () => _openMessage(
+                              context,
+                              item,
+                              profile: true,
+                            ),
+                          ),
+                        if (item.extra.mid == liveRoomController.ruid)
+                          const WidgetSpan(
+                            child: Padding(
+                              padding: .only(right: 4),
+                              child: PBadge(
+                                text: '主播',
+                                isStack: false,
+                                type: .line_primary,
                               ),
+                            ),
+                          ),
+                        ?medal,
+                        TextSpan(
+                          text: '${item.name}: ',
+                          style: TextStyle(
+                            color:
+                                liveNameColor(
+                                  item.badges.nameColor,
+                                ) ??
+                                nameColor,
+                            fontSize: 15,
+                          ),
+                          recognizer: item.extra.mid == 0
+                              ? null
+                              : (NoDeadlineTapGestureRecognizer()
+                                  ..onTap = () => _openMessage(
+                                    context,
+                                    item,
+                                    profile: true,
+                                  )),
+                        ),
+                        if (item.reply case final reply?)
+                          TextSpan(
+                            text: '@${reply.name} ',
+                            style: TextStyle(
+                              color: primary,
+                              fontSize: 15,
+                            ),
+                            recognizer: (reply.mid ?? 0) <= 0
+                                ? null
+                                : (NoDeadlineTapGestureRecognizer()
+                                    ..onTap = () => Get.toNamed(
+                                      '/member?mid=${reply.mid}',
+                                    )),
+                          ),
+                        _buildMsg(item),
+                      ],
+                    ),
                   );
                 }
                 if (item is SuperChatItem) {

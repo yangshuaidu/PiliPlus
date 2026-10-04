@@ -278,7 +278,8 @@ abstract final class LiveHttp {
         '${HttpString.liveBaseUrl}/xlive/app-room/v1/index/getInfoByRoom',
         queryParameters: params,
       );
-      if (mobile.data['code'] == 0 && mobile.data['data'] is Map<String, dynamic>) {
+      if (mobile.data['code'] == 0 &&
+          mobile.data['data'] is Map<String, dynamic>) {
         return Success(RoomInfoH5Data.fromJson(mobile.data['data']));
       }
     } catch (_) {

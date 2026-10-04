@@ -480,25 +480,38 @@ class _LiveRoomPageState extends State<LiveRoomPage>
       return Stack(
         clipBehavior: Clip.none,
         children: [
-          Positioned.fill(child: Obx(() {
-            final url = _liveRoomController.roomInfoH5.value?.roomInfo?.appBackground;
-            return LiveRoomBackdrop(image: !isFullScreen && url != null && url.isNotEmpty
-              ? CachedNetworkImageProvider(ImageUtils.safeThumbnailUrl(url)) : null);
-          })),
+          Positioned.fill(
+            child: Obx(() {
+              final url =
+                  _liveRoomController.roomInfoH5.value?.roomInfo?.appBackground;
+              return LiveRoomBackdrop(
+                image: !isFullScreen && url != null && url.isNotEmpty
+                    ? CachedNetworkImageProvider(
+                        ImageUtils.safeThumbnailUrl(url),
+                      )
+                    : null,
+              );
+            }),
+          ),
           if (isPortrait && !isFullScreen)
-            Positioned.fill(child: LiveMobileRoomLayout(
-              portraitSource: _liveRoomController.usePortraitOverlay,
-              aspectRatio: _liveRoomController.sourceAspectRatio.value,
-              padding: padding,
-              header: _buildAppBar(false),
-              videoBuilder: (size) => videoPlayerPanel(false,
-                width: size.width, height: size.height,
-                needDm: !_liveRoomController.usePortraitOverlay),
-              chat: _buildChatWidget(_liveRoomController.usePortraitOverlay),
-              composer: _buildInputWidget,
-              cleanScreen: _liveRoomController.cleanScreen.value,
-              onCleanScreen: _liveRoomController.cleanScreen.toggle,
-            ))
+            Positioned.fill(
+              child: LiveMobileRoomLayout(
+                portraitSource: _liveRoomController.usePortraitOverlay,
+                aspectRatio: _liveRoomController.sourceAspectRatio.value,
+                padding: padding,
+                header: _buildAppBar(false),
+                videoBuilder: (size) => videoPlayerPanel(
+                  false,
+                  width: size.width,
+                  height: size.height,
+                  needDm: !_liveRoomController.usePortraitOverlay,
+                ),
+                chat: _buildChatWidget(_liveRoomController.usePortraitOverlay),
+                composer: _buildInputWidget,
+                cleanScreen: _liveRoomController.cleanScreen.value,
+                onCleanScreen: _liveRoomController.cleanScreen.toggle,
+              ),
+            )
           else
             ScaffoldLayout(
               appBar: isWindowMode && isFullScreen && !isPortrait
@@ -637,12 +650,21 @@ class _LiveRoomPageState extends State<LiveRoomPage>
     },
   );
 
-  Widget get onlineWidget => Obx(() => LiveAudienceButton(
-    onTap: _showRank,
-    count: _liveRoomController.onlineCount.value ?? '观众',
-    avatars: [for (final viewer in _liveRoomController.topViewers.take(3))
-      NetworkImgLayer(src: viewer.face, width: 24, height: 24, type: .avatar)],
-  ));
+  Widget get onlineWidget => Obx(
+    () => LiveAudienceButton(
+      onTap: _showRank,
+      count: _liveRoomController.onlineCount.value ?? '观众',
+      avatars: [
+        for (final viewer in _liveRoomController.topViewers.take(3))
+          NetworkImgLayer(
+            src: viewer.face,
+            width: 24,
+            height: 24,
+            type: .avatar,
+          ),
+      ],
+    ),
+  );
 
   void _showRank() {
     final live = _liveRoomController;
@@ -654,21 +676,41 @@ class _LiveRoomPageState extends State<LiveRoomPage>
             length: 2,
             child: Column(
               children: [
-                SizedBox(height: 38, child: Row(children: [
-                  const Expanded(child: TabBar(
-                    isScrollable: true,
-                    tabAlignment: TabAlignment.start,
-                    dividerColor: Colors.transparent,
-                    labelPadding: EdgeInsets.symmetric(horizontal: 12),
-                    labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                    indicatorSize: TabBarIndicatorSize.label,
-                    tabs: [Tab(height: 34, text: '房间观众'), Tab(height: 34, text: '大航海')],
-                  )),
-                  IconButton(tooltip: '关闭榜单', onPressed: () => Navigator.pop(context),
-                    constraints: const BoxConstraints.tightFor(width: 30, height: 30),
-                    padding: EdgeInsets.zero, icon: const Icon(Icons.close, size: 17)),
-                  const SizedBox(width: 6),
-                ])),
+                SizedBox(
+                  height: 38,
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: TabBar(
+                          isScrollable: true,
+                          tabAlignment: TabAlignment.start,
+                          dividerColor: Colors.transparent,
+                          labelPadding: EdgeInsets.symmetric(horizontal: 12),
+                          labelStyle: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          indicatorSize: TabBarIndicatorSize.label,
+                          tabs: [
+                            Tab(height: 34, text: '房间观众'),
+                            Tab(height: 34, text: '大航海'),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: '关闭榜单',
+                        onPressed: () => Navigator.pop(context),
+                        constraints: const BoxConstraints.tightFor(
+                          width: 30,
+                          height: 30,
+                        ),
+                        padding: EdgeInsets.zero,
+                        icon: const Icon(Icons.close, size: 17),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                  ),
+                ),
                 Expanded(
                   child: TabBarView(
                     children: [
@@ -785,7 +827,9 @@ class _LiveRoomPageState extends State<LiveRoomPage>
       areaId: live.roomInfoH5.value?.roomInfo?.areaId,
       parentAreaId: live.roomInfoH5.value?.roomInfo?.parentAreaId,
       redPacket: redPacket,
-      sourceAspectRatio: live.usePortraitOverlay ? 9 / 16 : live.sourceAspectRatio.value,
+      sourceAspectRatio: live.usePortraitOverlay
+          ? 9 / 16
+          : live.sourceAspectRatio.value,
     );
   }
 
@@ -857,10 +901,18 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                 ExpansionTile(
                   title: const Text('画面比例'),
                   children: [
-                    for (final fit in const [VideoFitType.contain, VideoFitType.cover, VideoFitType.fitWidth])
+                    for (final fit in const [
+                      VideoFitType.contain,
+                      VideoFitType.cover,
+                      VideoFitType.fitWidth,
+                    ])
                       Obx(
                         () => RadioListTile<VideoFitType>(
-                          title: Text(switch (fit) {VideoFitType.contain => '跟随直播源', VideoFitType.cover => '填充窗口', _ => '适应窗口'}),
+                          title: Text(switch (fit) {
+                            VideoFitType.contain => '跟随直播源',
+                            VideoFitType.cover => '填充窗口',
+                            _ => '适应窗口',
+                          }),
                           value: fit,
                           groupValue: plPlayerController.videoFit.value,
                           onChanged: (value) {
@@ -974,14 +1026,20 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                 }
                 final relation = _liveRoomController.anchorRelation.value;
                 return LiveAnchorChip(
-                  avatar: NetworkImgLayer(width: 34, height: 34, type: .avatar,
-                    src: roomInfoH5.anchorInfo?.baseInfo?.face),
+                  avatar: NetworkImgLayer(
+                    width: 34,
+                    height: 34,
+                    type: .avatar,
+                    src: roomInfoH5.anchorInfo?.baseInfo?.face,
+                  ),
                   name: roomInfoH5.anchorInfo?.baseInfo?.uname ?? '主播',
                   subtitle: _liveRoomController.watchedShow.value ?? '直播间',
                   followed: relation == 2 || relation == 6,
-                  onProfile: () => Get.toNamed('/member?mid=${roomInfoH5.roomInfo?.uid}'),
-                  onFollow: _liveRoomController.followingAnchor.value ? null :
-                    () => _liveRoomController.followAnchor(context),
+                  onProfile: () =>
+                      Get.toNamed('/member?mid=${roomInfoH5.roomInfo?.uid}'),
+                  onFollow: _liveRoomController.followingAnchor.value
+                      ? null
+                      : () => _liveRoomController.followAnchor(context),
                 );
               },
             ),
@@ -1104,59 +1162,54 @@ class _LiveRoomPageState extends State<LiveRoomPage>
       onEmoji: () => _liveRoomController.onSendDanmaku(true),
       onGift: _showGifts,
       likeButton: Builder(
-              builder: (context) {
-                final isLogin = kDebugMode || _liveRoomController.isLogin;
-                return Material(
-                  color: const Color(0x70263041),
-                  shape: const CircleBorder(),
-                  child: Tooltip(
-                    message: '点赞',
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: isLogin ? null : _liveRoomController.toastNotLogin,
-                      onTapDown: isLogin
-                          ? _liveRoomController.onLikeTapDown
-                          : null,
-                      onTapUp: isLogin ? _liveRoomController.onLikeTapUp : null,
-                      onTapCancel: isLogin
-                          ? _liveRoomController.onLikeTapUp
-                          : null,
-                      child: SizedBox.square(
-                        dimension: 34,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          clipBehavior: Clip.none,
-                          children: [
-                            const Icon(
-                              Icons.thumb_up_off_alt,
-                              color: Colors.white,
-                              size: 19,
-                            ),
-                            Positioned(
-                              top: -12,
-                              right: 0,
-                              child: Obx(() {
-                                final count =
-                                    _liveRoomController.likeClickTime.value;
-                                return count == 0
-                                    ? const SizedBox.shrink()
-                                    : Text(
-                                        'x$count',
-                                        style: const TextStyle(
-                                          color: Color(0xFFFB7299),
-                                          fontSize: 12,
-                                        ),
-                                      );
-                              }),
-                            ),
-                          ],
-                        ),
+        builder: (context) {
+          final isLogin = kDebugMode || _liveRoomController.isLogin;
+          return Material(
+            color: const Color(0x70263041),
+            shape: const CircleBorder(),
+            child: Tooltip(
+              message: '点赞',
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: isLogin ? null : _liveRoomController.toastNotLogin,
+                onTapDown: isLogin ? _liveRoomController.onLikeTapDown : null,
+                onTapUp: isLogin ? _liveRoomController.onLikeTapUp : null,
+                onTapCancel: isLogin ? _liveRoomController.onLikeTapUp : null,
+                child: SizedBox.square(
+                  dimension: 34,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Icon(
+                        Icons.thumb_up_off_alt,
+                        color: Colors.white,
+                        size: 19,
                       ),
-                    ),
+                      Positioned(
+                        top: -12,
+                        right: 0,
+                        child: Obx(() {
+                          final count = _liveRoomController.likeClickTime.value;
+                          return count == 0
+                              ? const SizedBox.shrink()
+                              : Text(
+                                  'x$count',
+                                  style: const TextStyle(
+                                    color: Color(0xFFFB7299),
+                                    fontSize: 12,
+                                  ),
+                                );
+                        }),
+                      ),
+                    ],
                   ),
-                );
-              },
+                ),
+              ),
             ),
+          );
+        },
+      ),
     );
     if (_liveRoomController.showSuperChat) {
       return Stack(

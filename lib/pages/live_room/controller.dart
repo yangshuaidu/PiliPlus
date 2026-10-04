@@ -86,7 +86,10 @@ class LiveRoomController extends GetxController {
   final followingAnchor = false.obs;
 
   Future<void> followAnchor(BuildContext context) async {
-    if (!Accounts.main.isLogin) { toastNotLogin(); return; }
+    if (!Accounts.main.isLogin) {
+      toastNotLogin();
+      return;
+    }
     final uid = ruid;
     if (uid == null || followingAnchor.value) return;
     final account = Accounts.main;
@@ -97,14 +100,19 @@ class LiveRoomController extends GetxController {
       if (relation case Success(:final response)) {
         anchorRelation.value = response.attribute;
         await RequestUtils.actionRelationMod(
-          context: context, mid: uid,
+          context: context,
+          mid: uid,
           isFollow: response.attribute == 2 || response.attribute == 6,
           afterMod: (value) {
             if (identical(account, Accounts.main)) anchorRelation.value = value;
           },
         );
-      } else { relation.toast(); }
-    } finally { followingAnchor.value = false; }
+      } else {
+        relation.toast();
+      }
+    } finally {
+      followingAnchor.value = false;
+    }
   }
 
   final liveTime = Rxn<int>();
@@ -525,12 +533,17 @@ class LiveRoomController extends GetxController {
       final uid = response.roomInfo?.uid;
       anchorRelation.value = null;
       if (account.isLogin && uid != null) {
-        UserHttp.userRelation(uid).then((value) {
-          if (!_closed && identical(account, Accounts.main) &&
-              roomInfoH5.value?.roomInfo?.uid == uid && value is Success) {
-            anchorRelation.value = value.response.attribute;
-          }
-        }).catchError((Object _) {});
+        UserHttp.userRelation(uid)
+            .then((value) {
+              if (!_closed &&
+                  identical(account, Accounts.main) &&
+                  roomInfoH5.value?.roomInfo?.uid == uid) {
+                if (value case Success(:final response)) {
+                  anchorRelation.value = response.attribute;
+                }
+              }
+            })
+            .catchError((Object _) {});
       }
       refreshTopViewers();
       title.value = response.roomInfo?.title ?? '';
