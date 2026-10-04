@@ -93,8 +93,7 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.tap(find.byType(ListTile).first);
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('发红包 · 10 电池'), 120,
-      scrollable: find.descendant(of: find.byType(ListView), matching: find.byType(Scrollable)));
+    await tester.ensureVisible(find.text('发红包 · 10 电池'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('发红包 · 10 电池'));
     await tester.pump();

@@ -347,8 +347,10 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
               ),
               if (_busy) const LinearProgressIndicator(),
               Expanded(
-                child: ListView(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
+                  child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (_message != null)
                       Padding(
@@ -493,6 +495,7 @@ class _LiveRedPacketPanelState extends State<LiveRedPacketPanel> {
                       child: const Text('刷新套餐'),
                     ),
                   ],
+                  ),
                 ),
               ),
             ],
